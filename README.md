@@ -7,15 +7,15 @@ Implementation of complex NIPKs in embedded devices.
 
 - fortuna-only: Utilization of a PRNG for recomputing
 pseudorandomness during the generation of both t-/s-values.
+- (dev) prime-encoding (AND).
 
 #### Protocol extensions
 
 - nyms: Idemix standard pseudonyms.
 - dnym: Idemix standard psudonyms in combination with domain ones.
 
-
 #### Multi-credential proofs
 
 - eq_proof_a: Equality proof of representation across n credentials (2).
 - eq_proof_b: Equality proof of representation across 2 credentials.
-
+- eq_proof_c: Equality proof of representation via prime encoding.
