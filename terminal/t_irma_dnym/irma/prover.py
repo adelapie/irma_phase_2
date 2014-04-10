@@ -249,9 +249,9 @@ def proveDNYM(connection, pk_i, CRED_ID, DEBUG, Rdom, Rr, r1):
   d2 = (pk_i['Ro'] ** ms) % pk_i['N']
   d3 = (Rr ** NYM_R) % pk_i['N']
   
-  ESTA33 = (d1 * d2 * d3) % pk_i['N']
+  tilde_d_nym = (d1 * d2 * d3) % pk_i['N']
 
-  input = {'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'm_com_s':m_com_s, 'DOM1':ThatB, 'NYM1':ESTA33, 'NYM2':NYM_1}
+  input = {'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'm_com_s':m_com_s, 'DOM1':ThatB, 'NYM1':tilde_d_nym, 'NYM2':NYM_1}
   m = { '1':m1, '2':m2, '3':m3, '4':m4, '5':m5 }
       
   verifier = protocol_ibm12.Verifier(pk_i, irma_util.APDU2integer(CONTEXT))
@@ -393,6 +393,12 @@ def proveDNYM_H(connection, pk_i, CRED_ID, DEBUG, Rdom, Rr, r1):
 
   a = a % pk_i['N']
   ms = ms % pk_i['N'] 
+  
+  m2 = m2 % pk_i['N'] 
+  m3 = m3 % pk_i['N'] 
+  m4 = m4 % pk_i['N'] 
+  m5 = m5 % pk_i['N'] 
+  
   m_com_s = m_com_s % pk_i['N'] 
 
   MS = m_com_s
@@ -411,9 +417,9 @@ def proveDNYM_H(connection, pk_i, CRED_ID, DEBUG, Rdom, Rr, r1):
   d2 = (pk_i['Ro'] ** ms) % pk_i['N']
   d3 = (Rr ** NYM_R) % pk_i['N']
   
-  ESTA33 = (d1 * d2 * d3) % pk_i['N']
+  tilde_d_nym = (d1 * d2 * d3) % pk_i['N']
 
-  input = {'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'm_com_s':m_com_s, 'DOM1':ThatB, 'NYM1':ESTA33, 'NYM2':NYM_1}
+  input = {'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'm_com_s':m_com_s, 'DOM1':ThatB, 'NYM1':tilde_d_nym, 'NYM2':NYM_1}
   m = { '1':m1, '2':m2, '3':m3, '4':m4, '5':m5 }
       
   verifier = protocol_ibm12.Verifier(pk_i, irma_util.APDU2integer(CONTEXT))

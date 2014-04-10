@@ -127,9 +127,9 @@ if __name__ == '__main__':
   (c1, c2) = issuer.issueCredentialX(connection, pk_i_1, sk_i_1, m_student_1, [0x00, 0x01], 0)
   print "Issuing root credential:", c1, c2
  
-  #(t, r, n, ok_prove) = prover.proveDNYM(connection, pk_i_1, [0x00, 0x01], 1, Rdom, Rr, r1)
-  #print "Verifying CRED #1:", ok_prove
-
-  (t, r, n, ok_prove) = prover.proveDNYM_H(connection, pk_i_1, [0x00, 0x01], 1, Rdom, Rr, r1)
+  (t, r, n, ok_prove) = prover.proveDNYM(connection, pk_i_1, [0x00, 0x01], 1, Rdom, Rr, r1)
   print "Verifying CRED #1:", ok_prove
+
+  #(t, r, n, ok_prove) = prover.proveDNYM_H(connection, pk_i_1, [0x00, 0x01], 1, Rdom, Rr, r1)
+  #print "Verifying CRED #1:", ok_prove
 

@@ -636,12 +636,10 @@ class Verifier:
       s6.update(Conversion.IP2OS(m_com_s))
       s6.update(Conversion.IP2OS(DOM1))
 
-
       s6.update(Conversion.IP2OS(NYM2))
       s6.update(Conversion.IP2OS(NYM1))
       s6.update(Conversion.IP2OS(self.context))
       s6.update(Conversion.IP2OS(pAprime))
-
       s6.update(Conversion.IP2OS(ThatCred1))
       
       pChat2 = integer(s6.digest())
