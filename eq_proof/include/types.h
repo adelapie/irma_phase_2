@@ -179,8 +179,10 @@ typedef struct {
   Hash context; // 20
   Value list[4]; // 16
   unsigned char rA[SIZE_R_A]; // 138
-  Number APrime; // 128
-  //ResponseV vHat; // 231
+  unsigned char rA1[SIZE_R_A]; // 138
+  unsigned char rA2[SIZE_R_A]; // 138
+  Number APrime1; // 128
+  Number APrime2;
   //ResponseE eHat; // 45
 } VerificationProof; // 20 + 307 + 20 + 16 + 138 + 128 + 231 + 45 = 905
 
