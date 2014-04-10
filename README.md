@@ -32,10 +32,9 @@ the attributes.
 #### Card-side
 
 These examples are based on MULTOS cards that can be ordered
-through http://www.multosinternational.com/.
-
-Compiling and loading the code in the card must be done using SmartDeck and MUtil.
-Both applications can be downloaded from http://www.multos.com/developer_centre/tools_and_sdk/.
+through http://www.multosinternational.com/. Compiling and loading the code 
+in the card must be done using SmartDeck and MUtil. Both applications can be 
+downloaded from http://www.multos.com/developer_centre/tools_and_sdk/.
 
 #### Optimizations
 
