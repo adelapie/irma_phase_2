@@ -25,6 +25,10 @@ cd terminal/t_[example]
 python prima.py
 ```
 
+The performance analysis can be done redirecting the output of the client to
+a separate text file and then accumulating the transaction time per APDU using 
+latency.sh or simply by redirecting the client to awk e.g. ```awk '{ sum += $3 } END { print sum }'```.
+
 In irma/prover.py there are usually two group of APDUs for performing
 the best case if terms of number of operations (reveal all) and hiding all
 the attributes.
@@ -49,6 +53,4 @@ pseudorandomness during the generation of both t-/s-values.
 
 #### Multi-credential proofs
 
-- eq_proof_a: Equality proof of representation across n credentials (2).
-- eq_proof_b: Equality proof of representation across 2 credentials.
-- eq_proof_c: Equality proof of representation via prime encoding.
+- eq_proof: Equality proof of representation
