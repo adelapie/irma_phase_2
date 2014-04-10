@@ -46,8 +46,6 @@ extern PublicData public;
 extern SessionData session;
 extern Credential credentials[MAX_CRED];
 
-extern Number cred_2_APrime;
-
 #define E_HAT_C_1 0x15
 #define E_HAT_C_2 0x16
 
@@ -57,6 +55,12 @@ extern Number cred_2_APrime;
 #define RA_C_1 0x01
 #define RA_C_2 0x02
 
+#define CNT_A_1 0x09 
+#define CNT_A_2 0x58
+
+/**
+ * Generate the corresponding mHat[i] value (AES-CTR).
+ */
 void ComputeMS(void) {
 
   /* In the equality proof ms(1) = ms(2), that
@@ -286,7 +290,7 @@ int ComputeAPrime1(void) {
 // 138 bytes
   
   Clear(SIZE_AES_BLOCK_128, ctr);
-  ctr[0] = session.prove.ctrBlock;
+  ctr[0] = CNT_A_1;
 
   ctr[0]++;  
   AES(session.prove.aesKey, key_size, ct, ctr);
@@ -323,15 +327,16 @@ int ComputeAPrime1(void) {
   ctr[0]++;  
   AES(session.prove.aesKey, key_size, ct, ctr);
   Copy(SIZE_R_A - 16 - 16 - 16 - 16 - 16 - 16 - 16 - 16, public.prove.rA + 16 + 16 + 16 + 16 + 16 + 16 + 16 + 16, ct);
-
-  session.prove.ctrBlock = ctr[0];        
+  
                                           
     for (i = 0; i < rA_offset; i++) {
-      public.prove.rA[i] = 0x00; // Set first byte(s) of rA, since it's not set by RandomBits command
+      public.prove.rA[i] = 0x00; // Set first byte(s) of rA1, since it's not set by RandomBits command
     }
-                                                      
-    ModExpSpecial(credential, SIZE_R_A, public.prove.rA, public.prove.APrime, public.prove.buffer.number[0]);
-    ModMul(SIZE_N, public.prove.APrime, credential->signature.A, credential->issuerKey.n);
+
+    Copy(SIZE_R_A, public.prove.rA1, public.prove.rA);
+                                                    
+    ModExpSpecial(credential, SIZE_R_A, public.prove.rA1, public.prove.APrime1, public.prove.buffer.number[0]);
+    ModMul(SIZE_N, public.prove.APrime1, credential->signature.A, credential->issuerKey.n);
 }
 
 int ComputeAPrime2(void)
@@ -355,7 +360,7 @@ int ComputeAPrime2(void)
     rA_offset = SIZE_R_A - rA_size;
                               
   Clear(SIZE_AES_BLOCK_128, ctr);
-  ctr[0] = session.prove.ctrBlock;
+  ctr[0] = CNT_A_2;
 
   ctr[0]++;  
   AES(session.prove.aesKey, key_size, ct, ctr);
@@ -393,15 +398,15 @@ int ComputeAPrime2(void)
   AES(session.prove.aesKey, key_size, ct, ctr);
   Copy(SIZE_R_A - 16 - 16 - 16 - 16 - 16 - 16 - 16 - 16, public.prove.rA + 16 + 16 + 16 + 16 + 16 + 16 + 16 + 16, ct);
 
-  session.prove.ctrBlock = ctr[0];        
-
                                           
     for (i = 0; i < rA_offset; i++) {
       public.prove.rA[i] = 0x00; // Set first byte(s) of rA, since it's not set by RandomBits command
     }
+
+    Copy(SIZE_R_A, public.prove.rA2, public.prove.rA);
                                                       
-    ModExpSpecial(credential, SIZE_R_A, public.prove.rA, cred_2_APrime, public.prove.buffer.number[1]); //cred_2_buffer);
-    ModMul(SIZE_N, cred_2_APrime, credential->signature.A, credential->issuerKey.n);
+    ModExpSpecial(credential, SIZE_R_A, public.prove.rA2, public.prove.APrime2, public.prove.buffer.number[1]); //cred_2_buffer);
+    ModMul(SIZE_N, public.prove.APrime2, credential->signature.A, credential->issuerKey.n);
 
 }
 
@@ -436,6 +441,8 @@ void ComputeVPrime2(Credential * credential_2) {
   crypto_compute_vHat2(); // Compute v^ = v~ + c v'
 
 }
+
+//9, 16 llamadas
 
 void ComputeV1(void) {
   AESblock ct, ctr;
@@ -716,13 +723,13 @@ void constructProof(unsigned char *masterSecret) {
   /* cred 1 */
 
   ComputeAPrime1();
-  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime1, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
       
   ComputeV1();
   ModExpSpecial(credential_1, SIZE_V_, session.prove.mHatTemp, public.prove.buffer.number[0], public.prove.buffer.number[1]);
 
   ComputeE1();
-  ModExp(SIZE_E_, SIZE_N, session.prove.mHatTemp, credential_1->issuerKey.n, public.prove.APrime, public.prove.buffer.number[1]);
+  ModExp(SIZE_E_, SIZE_N, session.prove.mHatTemp, credential_1->issuerKey.n, public.prove.APrime1, public.prove.buffer.number[1]);
 
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_1->issuerKey.n);
 
@@ -744,13 +751,13 @@ void constructProof(unsigned char *masterSecret) {
   /* cred 2 */
 
   ComputeAPrime2();
-  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, cred_2_APrime, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime2, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
   ComputeV2();
   ModExpSpecial(credential_2, SIZE_V_, session.prove.mHatTemp, public.prove.buffer.number[0], public.prove.buffer.number[1]);
 
   ComputeE2();
-  ModExp(SIZE_E_, SIZE_N, session.prove.mHatTemp, credential_2->issuerKey.n, cred_2_APrime, public.prove.buffer.number[1]);
+  ModExp(SIZE_E_, SIZE_N, session.prove.mHatTemp, credential_2->issuerKey.n, public.prove.APrime2, public.prove.buffer.number[1]);
 
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_2->issuerKey.n);
 

@@ -49,6 +49,10 @@ void ComputeE1(void);
 void ComputeE2(void);
 
 int ComputeAPrime1(void);
+int ComputeAPrime2(void);
+
+int ComputeAPrime1_G(void);
+int ComputeAPrime2_G(void);
 
 
 int ComputeVHat(unsigned int i);
@@ -85,13 +89,13 @@ do { \
   __code(CLEARN, public.prove.buffer.data, SIZE_V - 2*SIZE_E); \
   /* Multiply e with least significant half of r_A */\
   __code(PUSHZ, SIZE_E - SIZE_R_A/2); \
-  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA + SIZE_R_A/2)); \
+  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA1 + SIZE_R_A/2)); \
   __push(BLOCKCAST(SIZE_E)(credential_1->signature.e)); \
   __code(PRIM, PRIM_MULTIPLY, SIZE_E); \
   __code(STORE, public.prove.buffer.data + SIZE_V - 2*SIZE_E, 2*SIZE_E); \
   /* Multiply e with most significant half of r_A */\
   __code(PUSHZ, SIZE_E - SIZE_R_A/2); \
-  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA)); \
+  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA1)); \
   __push(BLOCKCAST(SIZE_E)(credential_1->signature.e)); \
   __code(PRIM, PRIM_MULTIPLY, SIZE_E); \
   /* Combine the two multiplications into a single result */\
@@ -127,13 +131,13 @@ do { \
   __code(CLEARN, public.prove.buffer.data, SIZE_V - 2*SIZE_E); \
   /* Multiply e with least significant half of r_A */\
   __code(PUSHZ, SIZE_E - SIZE_R_A/2); \
-  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA + SIZE_R_A/2)); \
+  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA2 + SIZE_R_A/2)); \
   __push(BLOCKCAST(SIZE_E)(credential_2->signature.e)); \
   __code(PRIM, PRIM_MULTIPLY, SIZE_E); \
   __code(STORE, public.prove.buffer.data + SIZE_V - 2*SIZE_E, 2*SIZE_E); \
   /* Multiply e with most significant half of r_A */\
   __code(PUSHZ, SIZE_E - SIZE_R_A/2); \
-  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA)); \
+  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA2)); \
   __push(BLOCKCAST(SIZE_E)(credential_2->signature.e)); \
   __code(PRIM, PRIM_MULTIPLY, SIZE_E); \
   /* Combine the two multiplications into a single result */\

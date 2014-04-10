@@ -16,7 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with IRMAcard. If not, see <http://www.gnu.org/licenses/>.
  *
- * Copyright (C) July 2011 - 2013.
+ * Copyright (C) July 2011 - 2014.
+ *   Antonio de la Piedra <a.delapiedracs.ru.nl>, Radboud University Nijmegen.
  *   Pim Vullers <pim@cs.ru.nl>, Radboud University Nijmegen.
  */
 
@@ -130,8 +131,6 @@ unsigned int state;
 /********************************************************************/
 #pragma melstatic
 
-Number cred_2_APrime;
-
 // Idemix: credentials and master secret
 Credential credentials[MAX_CRED];
 CLMessage masterSecret;
@@ -176,6 +175,10 @@ void main(void) {
       // Process the instruction
       switch (INS) {
       
+        //////////////////////////////////////////////////////////////
+        // Authentication                                           //
+        //////////////////////////////////////////////////////////////
+
         case INS_INTERNAL_AUTHENTICATE:
           // Perform card authentication & secure messaging setup
           break;
@@ -358,6 +361,7 @@ void startIssuance(void) {
   // Create new log entry
   logEntry = (IRMALogEntry*) log_new_entry(&log);
   Copy(SIZE_TIMESTAMP, logEntry->timestamp, public.issuanceSetup.timestamp);
+  //Copy(AUTH_TERMINAL_ID_BYTES, logEntry->terminal, terminal.id);
   logEntry->action = ACTION_ISSUE;
   logEntry->credential = credential->id;
 
@@ -607,6 +611,7 @@ void startVerification(void) {
   // Create new log entry
   logEntry = (IRMALogEntry*) log_new_entry(&log);
   Copy(SIZE_TIMESTAMP, logEntry->timestamp, public.verificationSetup.timestamp);
+  //Copy(AUTH_TERMINAL_ID_BYTES, logEntry->terminal, terminal.id);
   logEntry->action = ACTION_PROVE;
   logEntry->credential = credential->id;
   logEntry->details.prove.selection = session.prove.disclose;
@@ -615,6 +620,8 @@ void startVerification(void) {
 }
 
 void processVerification(void) {
+  unsigned char tmp[2];
+  Hash lastHash;  
 
   // Verification requires the terminal to be authenticated.
   /* Implicit due to the fact that we've got a secure tunnel. */
@@ -662,10 +669,8 @@ void processVerification(void) {
             if (!(APDU_wrapped || CheckCase(1))) {
               APDU_returnSW(SW_WRONG_LENGTH);
             }
-            
-            ComputeAPrime1();
-            
-            Copy(SIZE_N, public.apdu.data, public.prove.APrime);
+                        
+            Copy(SIZE_N, public.apdu.data, public.prove.APrime1);
             debugNumber("Returned A'", public.apdu.data);
             APDU_returnLa(SIZE_N);
 
@@ -675,11 +680,9 @@ void processVerification(void) {
               APDU_returnSW(SW_WRONG_LENGTH);
             }
             
-            ComputeAPrime2();
-            Copy(SIZE_N, public.apdu.data, cred_2_APrime);
+            Copy(SIZE_N, public.apdu.data, public.prove.APrime2);
             debugNumber("Returned A'", public.apdu.data);
             APDU_returnLa(SIZE_N);
-
 
           case P1_SIGNATURE_E:
             debugMessage("P1_SIGNATURE_E");
