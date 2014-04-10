@@ -31,7 +31,7 @@ pirma.py:
 git clone https://github.com/JHUISI/charm
 cd charm
 ./configure.sh
-make install (may require super-user privileges)
+make install (may require root privileges)
 ```
 
 Then, download one of the clients and run pirma.py.
@@ -47,3 +47,11 @@ the best case if terms of number of operations (reveal all) and hiding all
 the attributes.
 
 #### Card-side
+
+These examples are based on MULTOS cards that can be ordered
+through http://www.multosinternational.com/.
+
+Compiling and loading the code in the card must be done using SmartDeck and MUtil.
+Both applications can be downloaded from http://www.multos.com/developer_centre/tools_and_sdk/.
+
+
