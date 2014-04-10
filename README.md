@@ -25,6 +25,9 @@ cd terminal/t_[example]
 python prima.py
 ```
 
+The ```idemix/``` directory contains an implementation in python of the selective
+disclosure primitives and issuing of the Idemix specification [1].
+
 The performance analysis can be done redirecting the output of the client to
 a separate text file and then accumulating the transaction time per APDU using 
 latency.sh or simply by redirecting the client to awk e.g. ```awk '{ sum += $3 } END { print sum }'```.
@@ -40,6 +43,8 @@ through http://www.multosinternational.com/. Compiling and loading the code
 in the card must be done using SmartDeck and MUtil. Both applications can be 
 downloaded from http://www.multos.com/developer_centre/tools_and_sdk/.
 
+These modifications run on the implementation of the IRMA card developed by Pim Vullers [2].
+
 #### Optimizations
 
 - fortuna-only: Utilization of a PRNG for recomputing
@@ -53,4 +58,11 @@ pseudorandomness during the generation of both t-/s-values.
 
 #### Multi-credential proofs
 
-- eq_proof: Equality proof of representation
+- eq_proof: Equality proof of representation. In this example ```pirma.py``` first issues two
+credentials and then perform an equality proof of representation based on their master secret.
+
+### References
+
+Idemix specification: http://www.zurich.ibm.com/security/idemix/
+The IRMA card: https://github.com/credentials/irma_card
+
