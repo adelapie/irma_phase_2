@@ -182,21 +182,17 @@ typedef struct {
   unsigned char rA1[SIZE_R_A]; // 138
   unsigned char rA2[SIZE_R_A]; // 138
   Number APrime1; // 128
-  Number APrime2;
-  //ResponseE eHat; // 45
+  Number APrime2; // 128
 } VerificationProof; // 20 + 307 + 20 + 16 + 138 + 128 + 231 + 45 = 905
 
 typedef struct {
-  AES256key aesKey; // 32
-  AES256key secKey; // 32
-  unsigned char ctrBlock; // 1
-  ResponseV mHatTemp; // 74
-  unsigned char bufferHash[64]; // 74
-  AttributeMask disclose; // 2
-  Hash challenge; // 32
-  //Hash challenge_2; // 32
-//  unsigned char rA[SIZE_R_A]; // 138
-} VerificationSession; // 16*2 + 74 + 2 + 32 = 140
+  AES256key aesKey; 
+  unsigned char ctrBlock; 
+  ResponseV mHatTemp; 
+  unsigned char bufferHash[64];
+  AttributeMask disclose;
+  Hash challenge; 
+} VerificationSession; 
 
 typedef struct {
   CredentialIdentifier id;

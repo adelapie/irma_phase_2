@@ -325,11 +325,6 @@ void startIssuance(void) {
   // Start a new issuance session
   credential = NULL;
 
-  // Check policy
-  //if (!auth_checkIssuance(&terminal, public.issuanceSetup.id)) {
-  //  APDU_returnSW(SW_CONDITIONS_NOT_SATISFIED);
-  //}
-
   // Locate a credential slot
   for (i = 0; i < MAX_CRED; i++) {
     // Reuse the existing credential slot.
@@ -361,7 +356,6 @@ void startIssuance(void) {
   // Create new log entry
   logEntry = (IRMALogEntry*) log_new_entry(&log);
   Copy(SIZE_TIMESTAMP, logEntry->timestamp, public.issuanceSetup.timestamp);
-  //Copy(AUTH_TERMINAL_ID_BYTES, logEntry->terminal, terminal.id);
   logEntry->action = ACTION_ISSUE;
   logEntry->credential = credential->id;
 
@@ -664,6 +658,9 @@ void processVerification(void) {
 
         switch(P1) {
 
+          /* For each part of the signature per credential there 
+             one APDU i.e. (A, E, V), (A_2, E_2, V_2). */
+
           case P1_SIGNATURE_A:
             debugMessage("P1_SIGNATURE_A");
             if (!(APDU_wrapped || CheckCase(1))) {
@@ -690,6 +687,8 @@ void processVerification(void) {
               APDU_returnSW(SW_WRONG_LENGTH);
             }
 
+            /* Reconstruction of \hat{e^{(1)}} */
+
             ComputeEPrime1(&credentials[0]);
 
             Copy(SIZE_E_, public.apdu.data, session.prove.mHatTemp);
@@ -703,6 +702,8 @@ void processVerification(void) {
               APDU_returnSW(SW_WRONG_LENGTH);
             }
 
+            /* Reconstruction of \hat{e^{(2)}} */
+
             ComputeEPrime2(&credentials[1]);
 
             Copy(SIZE_E_, public.apdu.data, session.prove.mHatTemp);
@@ -715,6 +716,8 @@ void processVerification(void) {
             if (!(APDU_wrapped || CheckCase(1))) {
               APDU_returnSW(SW_WRONG_LENGTH);
             }
+
+            /* Reconstruction of \hat{v^{(1)}} */
     
             ComputeVPrime1(&credentials[0]);
 
@@ -726,6 +729,8 @@ void processVerification(void) {
             if (!(APDU_wrapped || CheckCase(1))) {
               APDU_returnSW(SW_WRONG_LENGTH);
             }
+
+            /* Reconstruction of \hat{v^{(2)}} */
     
             ComputeVPrime2(&credentials[1]);
 
