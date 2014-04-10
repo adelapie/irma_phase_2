@@ -830,7 +830,7 @@ void startVerification(void) {
   if (!macVfy) {
     APDU_returnSW(SW_CONDITIONS_NOT_SATISFIED);
   } else {
-    //multosBlockDecipherCBC(0x04, 16, public.apdu.data, public.apdu.data, 8, iv, 0x10, session.prove.secKey);           
+    multosBlockDecipherCBC(0x04, 16, public.apdu.data, public.apdu.data, 8, session.prove.SSC, 0x10, session.prove.secKey);           
     // Initialise the session
     session.prove.disclose = public.verificationSetup.selection;
     Copy(SIZE_H, public.prove.context, public.verificationSetup.context);
@@ -849,7 +849,6 @@ void startVerification(void) {
 
 void processVerification(void) {
   unsigned char macVfy = 0x00;
-  unsigned char iv[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
   // Verification requires the terminal to be authenticated.
   /* Implicit due to the fact that we've got a secure tunnel. */
@@ -882,7 +881,7 @@ void processVerification(void) {
         if (!macVfy) {
           APDU_returnSW(SW_CONDITIONS_NOT_SATISFIED);
         } else {               
-          multosBlockDecipherCBC(0x04, 16, public.apdu.data, public.apdu.data, 8, iv, 0x10, session.prove.secKey);
+          multosBlockDecipherCBC(0x04, 16, public.apdu.data, public.apdu.data, 8, session.prove.SSC, 0x10, session.prove.secKey);
 
           constructProof(credential, &masterSecret[0]);
           // The PRNG is reseted at this point for generating

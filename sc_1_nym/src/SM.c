@@ -35,17 +35,15 @@ unsigned char SM_IV[SM_IV_BYTES];
 extern PublicData public;
 extern SessionData session;
 
-
 /********************************************************************/
 /* Secure Messaging functions                                       */
 /********************************************************************/
 
 unsigned char checkMAC(void) {
   unsigned char result;
-  unsigned char iv[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-
-  DES_CBC_sign(__La, public.apdu.data, session.prove.mHatTemp, 0x10, session.prove.macKey, iv);
-  multosBlockCompare(8, public.apdu.data, iv, &result);
+  
+  DES_CBC_sign(__La, public.apdu.data, session.prove.mHatTemp, 0x10, session.prove.macKey, session.prove.SSC);
+  multosBlockCompare(sizeof(session.prove.SSC), public.apdu.data, session.prove.mHatTemp, &result);
 
   return result;
 }
@@ -59,34 +57,35 @@ void SM_APDU_wrap(unsigned char *apdu, unsigned char *buffer) {
   
   unsigned char blockLen = 16;
   unsigned short test;
-  unsigned char iv[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
   unsigned char key_size = 0x10; // 128 bits
 
-    __La = SM_ISO7816_4_pad(apdu, __La);
+  IncrementBytes(sizeof(session.prove.SSC), session.prove.SSC);
 
-    multosBlockEncipherCBC(0x04, __La, public.apdu.data, public.apdu.session, 8, iv, key_size, session.prove.secKey);
+  __La = SM_ISO7816_4_pad(apdu, __La);
 
-    apdu[0] = 0x87;
-    apdu[1] = __La + 1;
-    apdu[2] = 0x01;
+  multosBlockEncipherCBC(0x04, __La, public.apdu.data, public.apdu.session, 8, session.prove.SSC, key_size, session.prove.secKey);
+
+  apdu[0] = 0x87;
+  apdu[1] = __La + 1;
+  apdu[2] = 0x01;
       
-    CopyBytes(__La, apdu + 3, buffer);
+  CopyBytes(__La, apdu + 3, buffer);
 
-    __La += 3;
+  __La += 3;
 
-    apdu[__La++] = 0x99;
-    apdu[__La++] = 0x02;
-    apdu[__La++] = __SW >> 8;
-    apdu[__La++] = __SW;
+  apdu[__La++] = 0x99;
+  apdu[__La++] = 0x02;
+  apdu[__La++] = __SW >> 8;
+  apdu[__La++] = __SW;
 
   __La = SM_ISO7816_4_pad(apdu, __La);
 
   apdu[__La++] = 0x8e;
   apdu[__La++] = 0x08;
-  DES_CBC_sign(__La, apdu, apdu + __La, 0x10, session.prove.macKey, iv);
+
+  DES_CBC_sign(__La, apdu, apdu + __La, 0x10, session.prove.macKey, session.prove.SSC);
 
   __La += 8;
-
 }
 
 /**
