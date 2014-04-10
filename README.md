@@ -63,6 +63,6 @@ credentials and then perform an equality proof of representation based on their 
 
 ### References
 
-Idemix specification: http://www.zurich.ibm.com/security/idemix/
-The IRMA card: https://github.com/credentials/irma_card
+- Idemix specification: http://www.zurich.ibm.com/security/idemix/
+- The IRMA card: https://github.com/credentials/irma_card
 
