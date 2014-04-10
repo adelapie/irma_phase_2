@@ -152,12 +152,12 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   
   Clear(SIZE_H, session.prove.challenge);
 
-  // dNYM1
+  /* dNym = Rdom^ms */
   
   ModExp(SIZE_M, SIZE_N, masterSecret, credential->issuerKey.n, Rdom, public.prove.buffer.number[0]);          
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  // dNYM2 
+  /* \tilde{dNym} commitment to random */ 
     
   reset_PRNG();
   ComputeHat();
@@ -165,7 +165,7 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  // NYM1
+  /* nym_0 = R_0 ^ ms * Rr ^ r1 */
 
   ModExp(SIZE_M, SIZE_N, masterSecret, credential->issuerKey.n, credential->issuerKey.R[0], public.prove.buffer.number[0]);          
   ModExp(SIZE_M, SIZE_N, r1, credential->issuerKey.n, Rr, public.prove.buffer.number[1]);          
@@ -173,7 +173,7 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
           
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  // NYM2
+  // nym_1 = R_0 ^ \tilde{ms} * Rr ^ \tilde{r} */
 
   reset_PRNG();
   

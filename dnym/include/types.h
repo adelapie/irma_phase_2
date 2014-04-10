@@ -192,7 +192,6 @@ typedef struct {
   AttributeMask disclose; // 2
   Hash challenge; // 32
   unsigned char bufferHash[64];
-  unsigned char temp[SIZE_N];
 } VerificationSession; // 16*2 + 74 + 2 + 32 = 140
 
 typedef struct {
