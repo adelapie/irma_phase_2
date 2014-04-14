@@ -690,6 +690,7 @@ int verifySelection(Credential *credential, unsigned int selection) {
  * Construct a proof.
  */
 void constructProof(unsigned char *masterSecret) {
+
   unsigned char i, j;
 
   unsigned long dwPrevHashedBytes;
@@ -720,7 +721,7 @@ void constructProof(unsigned char *masterSecret) {
 
   multosSecureHashIV(SIZE_H, SHA_256, session.prove.challenge, public.prove.context, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  /* cred 1 */
+  // cred 1
 
   ComputeAPrime1();
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime1, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
@@ -732,23 +733,18 @@ void constructProof(unsigned char *masterSecret) {
   ModExp(SIZE_E_, SIZE_N, session.prove.mHatTemp, credential_1->issuerKey.n, public.prove.APrime1, public.prove.buffer.number[1]);
 
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_1->issuerKey.n);
+ 
+  ComputeMS();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential_1->issuerKey.n, credential_1->issuerKey.R[0], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_1->issuerKey.n);
 
-  for (i = 0; i <= credential_1->size; i++) {
-    if (disclosed(i) == 0) {
-      if (i == 0)
-        ComputeMS();
-      else
-        ComputeM1();
-      ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential_1->issuerKey.n, credential_1->issuerKey.R[i], public.prove.buffer.number[1]);
-      debugValue("R_i^m_i", public.prove.buffer.number[1], SIZE_N);
-      ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_1->issuerKey.n);
-      debugValue("ZTilde = ZTilde * buffer", public.prove.buffer.number[0], SIZE_N);
-    }
-  }
+  ComputeM1();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential_1->issuerKey.n, credential_1->issuerKey.R[1], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_1->issuerKey.n);
 
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  /* cred 2 */
+  // cred 2 
 
   ComputeAPrime2();
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime2, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
@@ -761,20 +757,16 @@ void constructProof(unsigned char *masterSecret) {
 
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_2->issuerKey.n);
 
-  for (i = 0; i <= credential_2->size; i++) {
-    if (disclosed(i) == 0) {
-     if (i == 0)
-        ComputeMS();
-      else
-        ComputeM2();
-       ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential_2->issuerKey.n, credential_2->issuerKey.R[i], public.prove.buffer.number[1]);
-      debugValue("R_i^m_i", public.prove.buffer.number[1], SIZE_N);
-      ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_2->issuerKey.n);
-      debugValue("ZTilde = ZTilde * buffer", public.prove.buffer.number[0], SIZE_N);
-    }
-  }
+  ComputeMS();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential_2->issuerKey.n, credential_2->issuerKey.R[0], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_2->issuerKey.n);
+
+  ComputeM1();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential_2->issuerKey.n, credential_2->issuerKey.R[1], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential_2->issuerKey.n);
 
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+
   multosSecureHashIV(SIZE_STATZK, SHA_256, session.prove.challenge, public.prove.apdu.nonce, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
 }
