@@ -49,7 +49,7 @@ These modifications run on the implementation of the IRMA card developed by Pim 
 
 - fortuna-only: Utilization of a PRNG for recomputing
 pseudorandomness during the generation of both t-/s-values.
-- (dev) prime-encoding (AND).
+- prime-encoding (AND).
 
 #### Protocol extensions
 
