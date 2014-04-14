@@ -871,18 +871,12 @@ void processVerification(void) {
           APDU_returnSW(SW_WRONG_P1P2);
         }
 
-        if (disclosed(P1)) {
-          Copy(SIZE_M, public.apdu.data, credential->attribute[P1 - 1]);
-          debugValue("Returned attribute", public.apdu.data, SIZE_M);
-          APDU_returnLa(SIZE_M);
-        } else {
-          ComputeHat();
-          crypto_compute_mHat(P1);
-          Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
+        ComputeHat();
+        crypto_compute_mHat(P1);
+        Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
 
-          debugValue("Returned response", public.apdu.data, SIZE_M_);
-          APDU_returnLa(SIZE_M_);
-        }
+        debugValue("Returned response", public.apdu.data, SIZE_M_);
+        APDU_returnLa(SIZE_M_);
       default:
         // TODO: unknown
         APDU_returnSW(SW_INS_NOT_SUPPORTED);

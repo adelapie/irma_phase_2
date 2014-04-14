@@ -168,15 +168,14 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   debugValue("buffer = A'^eTilde", public.prove.buffer.number[1], SIZE_N);
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
   debugValue("ZTilde = ZTilde * buffer", public.prove.buffer.number[0], SIZE_N);
-  for (i = 0; i <= 2; i++) {
-    if (disclosed(i) == 0) {
-      ComputeHat();
-      ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[i], public.prove.buffer.number[1]);
-      debugValue("R_i^m_i", public.prove.buffer.number[1], SIZE_N);
-      ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
-      debugValue("ZTilde = ZTilde * buffer", public.prove.buffer.number[0], SIZE_N);
-    }
-  }
+ 
+  ComputeHat();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[0], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
+
+  ComputeHat();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[1], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
 
   // Compute challenge c = H(context | A' | ZTilde | nonce)
   public.prove.list[0].data = public.prove.context;
