@@ -709,13 +709,16 @@ class Verifier:
 
       asn1_rep = header + asn1_rep
             
-      s6 = hashlib.new('sha256')
-      s6.update(asn1_rep.decode("hex"))
+      s6 = hashlib.new('sha256')      
 
+      s6.update(Conversion.IP2OS(self.context))
+      s6.update(Conversion.IP2OS(pAprime))
+      s6.update(Conversion.IP2OS(That))
+      s6.update(Conversion.IP2OS(n3))
+      
       pChat2 = integer(s6.digest())
 
       return pChat == pChat2
-
    
 def SHA1(bytes1):
     s1 = hashlib.new('sha1')
