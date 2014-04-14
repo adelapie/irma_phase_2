@@ -284,6 +284,15 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG, Rdom, Rr, r1):
   m1 = irma_util.APDU2integer(data)
 
   if DEBUG:
+    print "MS Ro^ms"
+
+  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_MS_COMMITMENT_2)
+  irma_util.print_details(DEBUG, CMD_GET_MS_COMMITMENT_2, r, t, n)
+
+  data, sw1, sw2 = r
+  m_com_s = irma_util.APDU2integer(data)
+
+  if DEBUG:
     print "NYM - 1"
 
   (t, r, n) = irma_util.send_apdu(connection, CMD_GET_NYM_1)
@@ -344,6 +353,15 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG, Rdom, Rr, r1):
   ms = ms % pk_i['N'] 
   m1 = m1 % pk_i['N'] 
 
+  m_com_s = m_com_s % pk_i['N'] 
+
+  MS = m_com_s
+  domNYM = Rdom % pk_i['N']
+  
+  That1 = (MS ** (-1 * c)) % pk_i['N']
+  That2 = (domNYM ** ms) % pk_i['N']
+  ThatB = (That1 * That2) % pk_i['N']
+
   Rr = Rr % pk_i['N']
 
   NYM_1 = NYM_1 % pk_i['N'] 
@@ -355,7 +373,7 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG, Rdom, Rr, r1):
   
   ESTA33 = (d1 * d2 * d3) % pk_i['N']
     
-  input = {'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'NYM1':NYM_1, 'NYM2':ESTA33  }
+  input = {'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'NYM1':NYM_1, 'NYM2':ESTA33, 'DNYM1':MS, 'DNYM2':ThatB }
   m = { '1':m1 }
   
   verifier = protocol_ibm12.Verifier(pk_i, irma_util.APDU2integer(CONTEXT))

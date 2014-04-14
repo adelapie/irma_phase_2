@@ -650,6 +650,9 @@ class Verifier:
       NYM1 = input['NYM1']
       NYM2 = input['NYM2']
       
+      DNYM1 = input['DNYM1']
+      DNYM2 = input['DNYM2']
+      
       Ak = 1 % self.pk_i['N']
       R = self.pk_i['R']
 
@@ -662,6 +665,8 @@ class Verifier:
             
       s6 = hashlib.new('sha256')      
 
+      s6.update(Conversion.IP2OS(DNYM1))
+      s6.update(Conversion.IP2OS(DNYM2))
       s6.update(Conversion.IP2OS(NYM1))
       s6.update(Conversion.IP2OS(NYM2))
       s6.update(Conversion.IP2OS(self.context))
