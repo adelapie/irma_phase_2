@@ -35,6 +35,9 @@
 
 extern PublicData public;
 extern SessionData session;
+extern CLMessage masterSecret;
+extern Number Rdom, Rr;
+extern unsigned char r1[SIZE_M];
 
 /********************************************************************/
 /* Proving functions                                                */
@@ -125,6 +128,28 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   dwPrevHashedBytes = 0;
   wLenMsgRem = 0;
 
+  // C1
+
+  ModExp(SIZE_M, SIZE_N, masterSecret, credential->issuerKey.n, credential->issuerKey.R[0], session.prove.C1);          
+  ModExp(SIZE_M, SIZE_N, r1, credential->issuerKey.n, Rr, public.prove.buffer.number[1]);          
+  ModMul(SIZE_N, session.prove.C1, public.prove.buffer.number[1], credential->issuerKey.n);
+            
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.C1, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+
+  // C2
+
+  reset_PRNG();
+  
+  ComputeHat();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[0], public.prove.buffer.number[0]);          
+
+  ComputeHat();
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, Rr, public.prove.buffer.number[1]);          
+
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
+
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+
   // IMPORTANT: Correction to the length of eTilde to prevent overflows
   RandomBits(public.prove.eHat, LENGTH_E_ - 1);
   debugValue("eTilde", public.prove.eHat, SIZE_E_);
@@ -143,6 +168,8 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   debugValue("A' = S^r_A mod n", public.prove.APrime, SIZE_N);
   ModMul(SIZE_N, public.prove.APrime, credential->signature.A, credential->issuerKey.n);
   debugValue("A' = A' * A mod n", public.prove.APrime, SIZE_N);
+
+  reset_PRNG();
 
   // Compute ZTilde = A'^eTilde * S^vTilde * (R[i]^mTilde[i] foreach i not in D)
   ModExpSpecial(credential, SIZE_V_, public.prove.vHat, public.prove.buffer.number[0], public.prove.buffer.number[1]);
