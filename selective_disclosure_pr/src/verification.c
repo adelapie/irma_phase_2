@@ -35,9 +35,8 @@
 
 extern PublicData public;
 extern SessionData session;
-extern CLMessage masterSecret;
-extern Number Rdom, Rr;
-extern unsigned char r1[SIZE_M];
+extern unsigned char r[SIZE_M];
+extern Number rev_attr_1;
 
 /********************************************************************/
 /* Proving functions                                                */
@@ -93,35 +92,6 @@ void ComputeHat(void) {
         
 }
 
-/**
- * Select the attributes to be disclosed.
- *
- * @param selection bitmask of attributes to be disclosed.
- */
-int verifySelection(Credential *credential, unsigned int selection) {
-/*
-  // Never disclose the master secret.
-  if ((selection & 0x0001) != 0) {
-    debugError("selectAttributes(): master secret cannot be disclosed");
-    return VERIFICATION_ERROR_MASTER_SECRET;
-  }
-
-  // Always disclose the expiry attribute.
-  if ((selection & 0x0002) == 0) {
-    debugError("selectAttributes(): expiry attribute must be disclosed");
-    return VERIFICATION_ERROR_EXPIRY;
-  }
-
-  // Do not allow non-existant attributes.
-  if ((selection & (0xFFFF << credential->size + 1)) != 0) {
-    debugError("selectAttributes(): selection contains non-existant attributes");
-    return VERIFICATION_ERROR_NOT_FOUND;
-  }
-*/
-  debugInteger("Attribute disclosure selection", selection);
-  return VERIFICATION_SELECTION_VALID;
-}
-
 unsigned int realSize(unsigned char *buffer, unsigned int size) {
   while (*buffer == 0) {
     buffer++;
@@ -142,62 +112,61 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   unsigned long dwPrevHashedBytes;
   unsigned short wLenMsgRem;
   unsigned short pRemainder;
-        
+      
   rA_size = realSize(credential->signature.v, SIZE_V) - 1 - realSize(credential->signature.e, SIZE_E);
   if (rA_size > SIZE_R_A) { rA_size = SIZE_R_A; }
   rA_offset = SIZE_R_A - rA_size;
 
   init_PRNG();
 
-  // challenge - initialization
-
+  // HASH - init
+  
   memset(session.prove.bufferHash, 0, 64);  
 
   pRemainder = 0;
   dwPrevHashedBytes = 0;
   wLenMsgRem = 0;
+
+  //multosSecureHashIV(SIZE_STATZK, SHA_256, session.prove.challenge, public.prove.apdu.nonce, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+
+  /* C_tilde = (Z^(m_r))^ \tilde{m_h} * S ^ \tilde{r}/ */
+
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x04); // \tilde{m_h} = 0x04 ^ n // XXXX: por ahora
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, rev_attr_1, public.prove.buffer.number[0]);          
+
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x02); // \tilde{r} = 0x02 ^ n // XXXX: por ahora
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+
+  /* C = Z^m * S^r \mod n */
+
+  ModExp(SIZE_M, SIZE_N, credential->attribute[0], credential->issuerKey.n, credential->issuerKey.Z, public.prove.buffer.number[0]);          
+  ModExp(SIZE_M, SIZE_N, r, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
+
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  
+  Copy(SIZE_N, session.prove.C, public.prove.buffer.number[0]);
+    
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.C, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+
+  /* \tilde{Co} = Z^{\tilde{m}} * S^{\tilde{r}} \mod n */
   
-  Clear(SIZE_H, session.prove.challenge);
-
-  /* C */
-
-  ModExp(SIZE_M, SIZE_N, credential->attribute[0], credential->issuerKey.n, credential->issuerKey.Z, session.prove.C_prime);          
-  ModExp(SIZE_M, SIZE_N, r1, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
-  ModMul(SIZE_N, session.prove.C_prime, public.prove.buffer.number[1], credential->issuerKey.n);
-          
-  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.C_prime, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
-
-  /* C0 */
-
-  reset_PRNG();
-  
-  ComputeHat();
+  //ComputeHat();
+  //ComputeHat();
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x01);
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.Z, public.prove.buffer.number[0]);          
 
-  ComputeHat();
+  //ComputeHat();
+  //ComputeHat();
+  //ComputeHat();
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x02);
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
 
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
 
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  /* C1  - XXX: mH */
-
-  reset_PRNG();
-  
-  ComputeHat();
-  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.Z, public.prove.buffer.number[0]);          
-
-  ComputeHat();
-  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
-
-  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
-
-  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
-
-  // context
-
-  //multosSecureHashIV(SIZE_H, SHA_256, session.prove.challenge, public.prove.context, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+  reset_PRNG(); // XXXX: Move after \tilde{Z} ?
 
   // IMPORTANT: Correction to the length of eTilde to prevent overflows
   RandomBits(public.prove.eHat, LENGTH_E_ - 1);
@@ -218,10 +187,6 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   ModMul(SIZE_N, public.prove.APrime, credential->signature.A, credential->issuerKey.n);
   debugValue("A' = A' * A mod n", public.prove.APrime, SIZE_N);
 
-  //multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
-
-  reset_PRNG();
-
   // Compute ZTilde = A'^eTilde * S^vTilde * (R[i]^mTilde[i] foreach i not in D)
   ModExpSpecial(credential, SIZE_V_, public.prove.vHat, public.prove.buffer.number[0], public.prove.buffer.number[1]);
   debugValue("ZTilde = S^vTilde", public.prove.buffer.number[0], SIZE_N);
@@ -229,18 +194,23 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   debugValue("buffer = A'^eTilde", public.prove.buffer.number[1], SIZE_N);
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
   debugValue("ZTilde = ZTilde * buffer", public.prove.buffer.number[0], SIZE_N);
-  for (i = 0; i <= credential->size; i++) {
-    if (disclosed(i) == 0) {
-      ComputeHat();
-      ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[i], public.prove.buffer.number[1]);
-      debugValue("R_i^m_i", public.prove.buffer.number[1], SIZE_N);
-      ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
-      debugValue("ZTilde = ZTilde * buffer", public.prove.buffer.number[0], SIZE_N);
-    }
-  }
+ 
+  // ms
+  //ComputeHat();
 
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x03);
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[0], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
+
+  //m
+  //ComputeHat();
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x01);
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[1], public.prove.buffer.number[1]);
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
+
+  multosSecureHashIV(SIZE_H, SHA_256, session.prove.challenge, public.prove.context, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
-  //multosSecureHashIV(SIZE_STATZK, SHA_256, session.prove.challenge, public.prove.apdu.nonce, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
   crypto_compute_ePrime(); // Compute e' = e - 2^(l_e' - 1)
   debugValue("e' = e - 2^(l_e' - 1)", credential->signature.e + SIZE_E - SIZE_EPRIME, SIZE_EPRIME);
