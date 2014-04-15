@@ -191,8 +191,8 @@ typedef struct {
   ResponseM mHatTemp; // 74
   AttributeMask disclose; // 2
   Hash challenge; // 32
-  unsigned char bufferHash[64]; // 74
-  Number C_prime;
+  unsigned char bufferHash[64];
+  Number C;
 } VerificationSession; // 16*2 + 74 + 2 + 32 = 140
 
 typedef struct {

@@ -235,6 +235,4 @@ do { \
   __code(STOREI, SIZE_M_); \
 } while (0)
 
-
-
 #endif // __verification_H

@@ -54,19 +54,5 @@ do { \
   __code(PRIM, PRIM_SECURE_HASH); \
 } while (0)
 
-#define multosSecureHashIV(msgLen, hashLen, hashOut, msgIn, intermediateHash, numPrevHashedBytes, numMsgRemainder, msgRemainder) \
-do { \
- __push (__typechk(unsigned short, msgLen)); \
- __push (__typechk(unsigned short, hashLen)); \
- __push (__typechk(unsigned char *, hashOut)); \
- __push (__typechk(unsigned char *, msgIn)); \
- __push (__typechk(unsigned char *, intermediateHash)); \
- __push (__typechk(unsigned long *, numPrevHashedBytes)); \
- __push (__typechk(unsigned short, *numMsgRemainder)); \
- __push (__typechk(unsigned short, *msgRemainder)); \
- __code (PRIM, PRIM_SECURE_HASH_IV); \
- __code(STORE, msgRemainder, 2); \
- __code(STORE, numMsgRemainder, 2); \
-} while (0)
 
 #endif // __SHA_H

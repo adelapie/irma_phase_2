@@ -208,8 +208,8 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[1], public.prove.buffer.number[1]);
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
 
-  multosSecureHashIV(SIZE_H, SHA_256, session.prove.challenge, public.prove.context, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
-  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+  //multosSecureHashIV(SIZE_H, SHA_256, session.prove.challenge, public.prove.context, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+  //multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.APrime, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
   crypto_compute_ePrime(); // Compute e' = e - 2^(l_e' - 1)
