@@ -266,19 +266,6 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
 
   data, sw1, sw2 = r
   ms = irma_util.APDU2integer(data)
-
-
-
-  """ XXXX: DEBUG
-  if DEBUG:
-    print "tilde{C} = (Z^mr)^tilde{m_h} * S^tilde{r}"
-
-  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_C_TILDE)
-  irma_util.print_details(DEBUG, CMD_GET_C_TILDE, r, t, n)
-
-  data, sw1, sw2 = r
-  irma_c_tilde = irma_util.APDU2integer(data)
-  """
   
   if DEBUG:
     print "C = Z^m S^r"
@@ -289,85 +276,21 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
   data, sw1, sw2 = r
   C = irma_util.APDU2integer(data)
 
-
-  
   a = a % pk_i['N']
   C = C % pk_i['N']
 
   ms = ms % pk_i['N'] 
   m1 = m1 % pk_i['N'] 
-
-  print "RECEIVED"
   
-  print "C", C
-  print "r_hat", r_hat
-  print "ms", ms
-  print "m", m1
-  
-  # Calculo de \tilde{Co}
-  
-  print "SIMULATION Co"
-
-  # SIMULATION:
-  # C, Co, hat_r
-  """ 
-  mi_m = integer(int("00000000000000000000000000000000000000000000000076616c6964617465", 16))
-  mi_r = integer(int("0a0a0a0a0a0a0a0a0a0a0a0a00000000000000000000112abcddc31Acd010643", 16))
-  mi_m_h = integer(int("000000000000000000000000000000000000000000000000000000000000000F", 16))
-  mi_m_r = integer(int("0000000000000000000000000000000000000000000000000000000000000002", 16))
-  
-  m_tilde  = integer(int("0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101", 16))
-  r_tilde  = integer(int("0202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202", 16))
-  ms_tilde = integer(int("0303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303", 16))
-  mh_tilde = integer(int("0404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404040404", 16))
-
-  mi_hat_m = m_tilde + mi_m*c
-  mi_hat_r = r_tilde + mi_r*c
-  mi_hat_mh = (mh_tilde + mi_m_h*c)
-  
-  mi_Co = ((pk_i['Z'] ** m_tilde) * (pk_i['S'] ** r_tilde)) % pk_i['N']
-  mi_C  = ((pk_i['Z'] ** mi_m) * (pk_i['S'] ** mi_r)) % pk_i['N']
-    
-  print "mi_m", mi_m
-  print "mi_r", mi_r
-  print "C = Z^m S^r", mi_C
-  print "Co = Z^tilde_m S^tilde_r", hex(int(mi_Co))
-  #print "Co = C^(c * -1) Z^hat_m S^hat_r", hex(int(mi_Co_calculado))
-
-  print "mi hat m", hex(int(mi_hat_m))
-  print "mi hat r", hex(int(mi_hat_r)) 
-
-  # constantes
-  """
-  rev_attr_1 = pk_i['Z'] ** 2 % pk_i['N']
-  print "const - rev_attr_1", hex(int(rev_attr_1))
-  
-
-  #print "SIMULATION tilde{C}"
-
-  #C = (pk_i['Z'] ** 30) * (pk_i['S'] ** mi_r)
-  
-  #C_tilde = (((rev_attr_1) ** mh_tilde) * (pk_i['S'] ** r_tilde)) % pk_i['N']
-
-  #print "su c tilde", C_tilde
-  
-  #print "h_hat tarjeta", h_hat
-  #print "h_hat mia", mi_hat_mh
-
-  #C_tilde_prima = ((C ** (-1 * c)) * ((pk_i['Z'] ** 2) ** (mh_tilde + c*15)) * (pk_i['S'] ** (r_tilde + c*mi_r))) % pk_i['N']
-  #print "mi c tilde", C_tilde_prima
-  #print "mi c tilde - hex", hex(int(C_tilde_prima))
-  #print "tarjeta - hex", hex(int(irma_c_tilde))  
-
   # \tilde{Co}
 
-  mi_Co_calculado = (C ** (-1 * c) ) * (pk_i['Z'] ** m1) * (pk_i['S'] ** r_hat)
+  C_o = (C ** (-1 * c) ) * (pk_i['Z'] ** m1) * (pk_i['S'] ** r_hat)
 
   # \tilde{C}
   
-  C_tilde_prima = ((C ** (-1 * c)) * ((pk_i['Z'] ** 2) ** h_hat) * (pk_i['S'] ** r_hat)) % pk_i['N']
+  C_tilde = ((C ** (-1 * c)) * ((pk_i['Z'] ** 2) ** h_hat) * (pk_i['S'] ** r_hat)) % pk_i['N']
     
-  input = { 'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'C':C, 'Co':mi_Co_calculado, 'C_t':C_tilde_prima }
+  input = { 'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'C':C, 'Co':C_o, 'C_t':C_tilde }
   m = { '1':m1 }
   
   verifier = protocol_ibm12.Verifier(pk_i, irma_util.APDU2integer(CONTEXT))
