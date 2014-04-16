@@ -26,6 +26,11 @@
 #include "MULTOS.h"
 #include "types.h"
 
+void generate_r_tilde(void);
+void generate_m_tilde(void);
+void generate_mh_tilde(void);
+void generate_ms_tilde(void);
+
 void init_PRNG(void);
 void reset_PRNG(void);
 

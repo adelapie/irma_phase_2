@@ -896,10 +896,10 @@ void processVerification(void) {
         /* \tilde{C} */
         
         if (P2 == 0x23) {
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x04); // \tilde{m_h} = 0x04 ^ n // XXXX: por ahora
+          generate_mh_tilde();
           ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, rev_attr_1, public.prove.buffer.number[0]);          
 
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x02); // \tilde{r} = 0x02 ^ n // XXXX: por ahora
+          generate_r_tilde();
           ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
           ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  
           Copy(SIZE_N, public.apdu.data, public.prove.buffer.number[0]);
@@ -912,10 +912,7 @@ void processVerification(void) {
         if (P2 == 0x06) {
           reset_PRNG();
 
-          //ComputeHat();
-          //ComputeHat();
-          //ComputeHat();
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x02);
+          generate_r_tilde();
           crypto_compute_r(P1);
           Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
           
@@ -927,10 +924,7 @@ void processVerification(void) {
         if (P2 == 0x24) {
           reset_PRNG();
 
-          //ComputeHat();
-          //ComputeHat();
-          //ComputeHat();
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x04);
+          generate_mh_tilde();
           crypto_compute_h(P1);
           Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
           
@@ -942,33 +936,15 @@ void processVerification(void) {
         if (P2 == 0x07) {
           // test Co
           Copy(SIZE_N, public.apdu.data, session.prove.C);
-          APDU_returnLa(SIZE_N);                  
-
-          //Fill(SIZE_M_, session.prove.mHatTemp, 0x01);
-          //ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.Z, public.prove.buffer.number[0]);          
-
-  //ComputeHat();
-  //ComputeHat();
-  //ComputeHat();
-  
-    //Fill(SIZE_M_, session.prove.mHatTemp, 0x02);
-    //ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
-
-    //ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
-
-    //Copy(SIZE_N, public.apdu.data, public.prove.buffer.number[0]);
-    //APDU_returnLa(SIZE_N);                  
-        
-    }
+          APDU_returnLa(SIZE_N);                          
+        }
          
-
         /* m_0, m */
 
         if (P1 == 0x01)
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x01);
+          generate_m_tilde();
         else
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x03);  
-          //ComputeHat();
+          generate_ms_tilde();
         
         crypto_compute_mHat(P1);
         Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
