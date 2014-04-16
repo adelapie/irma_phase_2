@@ -38,36 +38,6 @@ extern SessionData session;
 extern unsigned char r[SIZE_M];
 extern Number rev_attr_1;
 
-/* Recomputing randomness */
-
-void generate_r_tilde(void) {
-  reset_PRNG();
-  ComputeHat(); //una antes  
-  ComputeHat();  
-}
-
-void generate_m_tilde(void) {
-  reset_PRNG();
-  ComputeHat();  
-  ComputeHat();  
-  ComputeHat(); // dos antes 
-}
-
-void generate_mh_tilde(void) {
-  reset_PRNG();
-//  ComputeHat();  
-//  ComputeHat();  
-  ComputeHat();  
-}
-
-void generate_ms_tilde(void) {
-  reset_PRNG();
-  ComputeHat();  
-  ComputeHat();  
-  ComputeHat();  
-  ComputeHat();  
-}
-
 /********************************************************************/
 /* Proving functions                                                */
 /********************************************************************/
@@ -171,13 +141,10 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
 
   /* C_tilde = (Z^(m_r))^ \tilde{m_h} * S ^ \tilde{r}/ */
 
-  //generate_mh_tilde();
   ComputeHat();  
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, rev_attr_1, public.prove.buffer.number[0]);          
 
-//  generate_r_tilde();
   ComputeHat();  
-
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  
   
@@ -187,12 +154,9 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
 
   /* \tilde{Co} = Z^{\tilde{m}} * S^{\tilde{r}} \mod n */
   
-  //generate_r_tilde();
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
 
-//  generate_m_tilde();
   ComputeHat();  
-
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.Z, public.prove.buffer.number[0]);          
 
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
@@ -229,13 +193,11 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
  
   // m
 
-  //generate_m_tilde();
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[1], public.prove.buffer.number[1]);
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);
 
   // ms
 
-//  generate_ms_tilde();
   ComputeHat();  
 
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.R[0], public.prove.buffer.number[1]);

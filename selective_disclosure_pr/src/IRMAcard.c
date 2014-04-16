@@ -924,21 +924,13 @@ void processVerification(void) {
         /* C */
         
         if (P2 == 0x07) {
-          // test Co
           Copy(SIZE_N, public.apdu.data, session.prove.C);
           APDU_returnLa(SIZE_N);                          
         }
          
         /* m_0, m */
 
-        if (P1 == 0x01)
-          ComputeHat();
-
-          //generate_m_tilde();
-        else
-          ComputeHat();
-          //generate_ms_tilde();
-        
+        ComputeHat();
         crypto_compute_mHat(P1);
         Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
 
