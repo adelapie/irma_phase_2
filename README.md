@@ -51,7 +51,7 @@ These modifications run on the implementation of the IRMA card developed by Pim 
 pseudorandomness during the generation of both t-/s-values.
 https://github.com/adelapie/irma_phase_2/tree/master/selective_disclosure
 - prime-encoding:
-	-- AND https://github.com/adelapie/irma_phase_2/tree/master/AND.
+	* AND https://github.com/adelapie/irma_phase_2/tree/master/AND.
 
 #### Protocol extensions
 
