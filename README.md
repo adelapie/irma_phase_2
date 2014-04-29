@@ -47,9 +47,11 @@ These modifications run on the implementation of the IRMA card developed by Pim 
 
 #### Optimizations
 
-- fortuna-only: Utilization of a PRNG for recomputing
+- selective disclosure: Utilization of a PRNG for recomputing
 pseudorandomness during the generation of both t-/s-values.
-- prime-encoding (AND).
+https://github.com/adelapie/irma_phase_2/tree/master/selective_disclosure
+- prime-encoding:
+	-- AND https://github.com/adelapie/irma_phase_2/tree/master/AND.
 
 #### Protocol extensions
 
