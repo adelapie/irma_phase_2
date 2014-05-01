@@ -1,7 +1,7 @@
 Pushing the limits of the IRMA card
 ===================================
 
-Implementation of complex NIPKs in embedded devices.
+Implementation of complex NIPKs on embedded devices.
 
 ### How to run the examples
 
