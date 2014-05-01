@@ -1,5 +1,5 @@
-irma_phase_2
-============
+Pushing the limits of the IRMA card
+===================================
 
 Implementation of complex NIPKs in embedded devices.
 
