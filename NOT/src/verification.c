@@ -36,7 +36,7 @@
 extern PublicData public;
 extern SessionData session;
 extern unsigned char r[SIZE_M];
-extern Number rev_attr_1;
+extern Number hide_attr_1;
 
 /********************************************************************/
 /* Proving functions                                                */
@@ -139,20 +139,37 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
     
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.C, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  /* C_tilde = (Z^(m_r))^ \tilde{m_h} * S ^ \tilde{r}/ */
+  /* C_tilde = (C ** \tilde{a}) * ((Z ** m_r) ** \tilde{b}) * (S ** \tilde{r'}) */
+  // XXXX: Ctilde nuevo, corregir
 
-  ComputeHat();  
-  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, rev_attr_1, public.prove.buffer.number[0]);          
+  
+    /* 1. Z ** m ** \tilde{b}*/
 
-  ComputeHat();  
-  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
+  ComputeHat();  // XXX: Reemplazar mas tarde
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x04); // \tilde{b}
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, hide_attr_1, public.prove.buffer.number[0]);          
+
+    /* 2. C ** \tilde{a} */
+
+  // XXX: Reemplazar mas tarde
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x03); // \tilde{a}
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, session.prove.C, public.prove.buffer.number[1]);          
+
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  
+
+    /* 3. S ** \tilde{r'} */
+  // XXX: Reemplazar mas tarde
+  Fill(SIZE_M_, session.prove.mHatTemp, 0x05); // \tilde{r'}
+  ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
+
+  ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);    
+  //Copy(SIZE_N, session.prove.Ctilde, public.prove.buffer.number[0]);
   
-  Copy(SIZE_N, session.prove.Ctilde, public.prove.buffer.number[0]);
-  
-  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.Ctilde, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
+  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
   /* \tilde{Co} = Z^{\tilde{m}} * S^{\tilde{r}} \mod n */
+  
+  ComputeHat();
   
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
 

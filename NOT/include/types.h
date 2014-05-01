@@ -189,10 +189,12 @@ typedef struct {
   AES256key aesKey; // 32
   unsigned char ctrBlock; // 1
   ResponseM mHatTemp; // 74
+  unsigned char op2[74];
   AttributeMask disclose; // 2
   Hash challenge; // 32
   unsigned char bufferHash[32];
-  Number C, Ctilde;
+  Number C;//, Ctilde;
+  unsigned char test[33];
 } VerificationSession; // 16*2 + 74 + 2 + 32 = 140
 
 typedef struct {

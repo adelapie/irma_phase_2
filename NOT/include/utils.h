@@ -75,4 +75,61 @@ void ClearCredential(Credential *credential);
  */
 //void ClearSession(void);
 
+
+#define multosBlockMultiply(blockLength, block1, block2, result) \
+do \
+{ \
+    __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block1))); \
+        __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block2))); \
+            __code (PRIM, PRIM_MULTIPLY, blockLength); \
+                __code (STORE, __typechk(unsigned char *, result), blockLength); \
+                } while (0)
+
+// SIZE_M*2
+
+#define __BINARY_OPN(N, OP, RES, OP1, OP2) \
+do \
+    {  \
+      __push (BLOCKCAST(N)(__typechk(unsigned char *, OP1))); \
+        __push (BLOCKCAST(N)(__typechk(unsigned char *, OP2))); \
+          __code (OP, N);  \
+            __code (POPN, N);  \
+              __code (STORE, __typechk(unsigned char *, RES), N); \
+              } while (0)
+              
+
+#define multosBlockSubtract(blockLength, block1, block2, result) \
+    __BINARY_OPN (blockLength, SUBN, result, block1, block2)
+
+#define miResta(blockLength, block1, block2, result) \
+do \
+{\
+  __push(BLOCKCAST(blockLength)(block1)); \
+  __push(BLOCKCAST(blockLength)(block2)); \
+  __code(SUBN, blockLength); \
+  __code(POPN, blockLength); \
+  __code(STORE, result, blockLength); \
+} while (0)
+
+#define miResta2() \
+do \
+{\
+  __push(BLOCKCAST(SIZE_M_/2)(session.prove.mHatTemp + SIZE_M_/2)); \
+  __push(BLOCKCAST(SIZE_M_/2)(session.prove.op2 + SIZE_M_/2)); \
+  __code(SUBN, SIZE_M_/2); \
+  IfCarry( \
+    debugMessage("Subtraction with borrow, adding 1"); \
+    __code(INCN, session.prove.op2, SIZE_M_/2); \
+  ); \
+  __code(POPN, SIZE_M_/2); \
+  __code(STORE, session.prove.op2 + SIZE_M_/2, SIZE_M_/2); \
+  __push(BLOCKCAST(SIZE_M_/2)(session.prove.mHatTemp)); \
+  __push(BLOCKCAST(SIZE_M_/2)(session.prove.op2)); \
+  __code(SUBN, SIZE_M_/2); \
+  __code(POPN, SIZE_M_/2); \
+  __code(STORE, session.prove.op2, SIZE_M_/2); \
+} while (0)
+
+
+
 #endif // __utils_H

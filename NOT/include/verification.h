@@ -100,6 +100,52 @@ do { \
 } while (0) */
 
 /**
+ * Compute the value \hat{a} = \tilde{a} - c*a.
+ * antes: * Compute the value v' = v - e*r_A.
+ */
+#define crypto_compute_test() \
+do { \
+  /* Clear the buffer, to prevent garbage messing up the computation */\
+  __code(CLEARN, public.prove.buffer.data, SIZE_M - 2*32); \
+  /* Multiply e with least significant half of r_A */\
+  __code(PUSHZ, SIZE_E - SIZE_R_A/2); \
+  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA + SIZE_R_A/2)); \
+  __push(BLOCKCAST(SIZE_E)(credential->signature.e)); \
+  __code(PRIM, PRIM_MULTIPLY, SIZE_E); \
+  __code(STORE, public.prove.buffer.data + SIZE_V - 2*SIZE_E, 2*SIZE_E); \
+  /* Multiply e with most significant half of r_A */\
+  __code(PUSHZ, SIZE_E - SIZE_R_A/2); \
+  __push(BLOCKCAST(SIZE_R_A/2)(public.prove.rA)); \
+  __push(BLOCKCAST(SIZE_E)(credential->signature.e)); \
+  __code(PRIM, PRIM_MULTIPLY, SIZE_E); \
+  /* Combine the two multiplications into a single result */\
+  __code(ADDN, public.prove.buffer.data, SIZE_V - SIZE_R_A/2); \
+  __code(POPN, 2*SIZE_E); \
+  /* Subtract from v and store the result in v' */\
+  __push(BLOCKCAST(SIZE_V/2 + 1)(credential->signature.v + SIZE_V/2)); \
+  __push(BLOCKCAST(SIZE_V/2 + 1)(public.prove.buffer.data + SIZE_V/2)); \
+  __code(SUBN, SIZE_V/2 + 1); \
+  IfCarry( \
+    debugMessage("Subtraction with borrow, adding 1"); \
+    __code(INCN, public.prove.buffer.data, SIZE_V/2); \
+  ); \
+  __code(POPN, SIZE_V/2 + 1); \
+  __code(STORE, public.prove.buffer.data + SIZE_V/2, SIZE_V/2 + 1); \
+  __push(BLOCKCAST(SIZE_V/2)(credential->signature.v)); \
+  __push(BLOCKCAST(SIZE_V/2)(public.prove.buffer.data)); \
+  __code(SUBN, SIZE_V/2); \
+  __code(POPN, SIZE_V/2); \
+  __code(STORE, public.prove.buffer.data, SIZE_V/2); \
+} while (0)
+/* Simple subtraction does not fit on the stack.
+  __push(BLOCKCAST(SIZE_V)(credential->signature.v)); \
+  __push(BLOCKCAST(SIZE_V)(public.prove.buffer.data)); \
+  __code(SUBN, SIZE_V); \
+  __code(POPN, SIZE_V); \
+  __code(STORE, public.prove.buffer.data, SIZE_V); \
+} while (0) */
+
+/**
  * Compute the response value vHat = vTilde + c*v'.
  *
  * Requires vTilde to be stored in vHat.
@@ -163,7 +209,7 @@ do { \
 #define crypto_compute_mHat(i) \
 do { \
   /* Multiply c with m */\
-  __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
+   __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
   __push(BLOCKCAST(SIZE_H)(session.prove.challenge)); \
   __push(BLOCKCAST(SIZE_M)(i == 0 ? masterSecret : credential->attribute[i - 1])); \
   __code(PRIM, PRIM_MULTIPLY, SIZE_M); \
@@ -178,6 +224,8 @@ do { \
   __code(POPN, SIZE_M_); \
   __code(STOREI, SIZE_M_); \
 } while (0)
+
+
 
 /**
  * Determine whether an attribute is to be disclosed or not.
@@ -239,6 +287,106 @@ do { \
   __code(POPN, SIZE_M_); \
   __code(STOREI, SIZE_M_); \
 } while (0)
+
+#define crypto_compute_b(i) \
+do { \
+  /* Multiply c with m */\
+  __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
+  __push(BLOCKCAST(SIZE_H)(session.prove.challenge)); \
+  __push(BLOCKCAST(SIZE_M)(b)); \
+  __code(PRIM, PRIM_MULTIPLY, SIZE_M); \
+  /* Put the result address in front of the operand (for STOREI) */\
+  __push(session.prove.mHatTemp); \
+  __code(PUSHZ, SIZE_M_); \
+  __code(ORN, SIZE_M_ + 2); \
+  __code(POPN, SIZE_M_ + 2); \
+  /* Add mTilde to the result of the multiplication and store in mHatTemp*/\
+  __push(BLOCKCAST(SIZE_M_)(session.prove.mHatTemp)); \
+  __code(ADDN, SIZE_M_); \
+  __code(POPN, SIZE_M_); \
+  __code(STOREI, SIZE_M_); \
+} while (0)
+
+#define crypto_compute_r_prima(i) \
+do { \
+  /* Multiply c with m */\
+  __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
+  __push(BLOCKCAST(SIZE_H)(session.prove.challenge)); \
+  __push(BLOCKCAST(SIZE_M)(session.prove.test)); \
+  __code(PRIM, PRIM_MULTIPLY, SIZE_M); \
+  /* Put the result address in front of the operand (for STOREI) */\
+  __push(session.prove.mHatTemp); \
+  __code(PUSHZ, SIZE_M_); \
+  __code(ORN, SIZE_M_ + 2); \
+  __code(POPN, SIZE_M_ + 2); \
+  /* Add mTilde to the result of the multiplication and store in mHatTemp*/\
+  __push(BLOCKCAST(SIZE_M_)(session.prove.mHatTemp)); \
+  __code(ADDN, SIZE_M_); \
+  __code(POPN, SIZE_M_); \
+  __code(STOREI, SIZE_M_); \
+} while (0)
+
+#define crypto_compute_a(i) \
+do { \
+  /* Multiply c with m */\
+  __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
+  __push(BLOCKCAST(SIZE_H)(session.prove.challenge)); \
+  __push(BLOCKCAST(SIZE_M)(a)); \
+  __code(PRIM, PRIM_MULTIPLY, SIZE_M); \
+  /* Put the result address in front of the operand (for STOREI) */\
+  __push(session.prove.mHatTemp); \
+  __code(PUSHZ, SIZE_M_); \
+  __code(ORN, SIZE_M_ + 2); \
+  __code(POPN, SIZE_M_ + 2); \
+  /* Add mTilde to the result of the multiplication and store in mHatTemp*/\
+  __push(BLOCKCAST(SIZE_M_)(session.prove.mHatTemp)); \
+  __code(ADDN, SIZE_M_); \
+  __code(POPN, SIZE_M_); \
+  __code(STOREI, SIZE_M_); \
+} while (0)
+
+#define multosBlockMultiply2(blockLength, block1, block2, result) \
+do \
+{ \
+  __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block1))); \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MULTIPLY, blockLength); \
+  __code (STORE, __typechk(unsigned char *, result), blockLength*2); \
+} while (0)
+
+#define multosBlockMultiply3() \
+do \
+{ \
+  __push (BLOCKCAST(SIZE_H)(session.prove.challenge)); \
+  __push (BLOCKCAST(SIZE_M)(a)); \
+  __code (PRIM, PRIM_MULTIPLY, SIZE_H); \
+  __code (STORE, session.prove.op2, SIZE_M*2); \
+} while (0)
+
+#define miResta3() \
+do \
+{\
+  __push(BLOCKCAST(SIZE_M_)(session.prove.mHatTemp)); \
+  __push(BLOCKCAST(SIZE_M*2)(session.prove.op2)); \
+  __code(SUBN, SIZE_M_); \
+  __code(STORE, public.apdu.data, SIZE_M_); \
+} while (0)
+
+#define miResta4() \
+do \
+{\
+  __push(BLOCKCAST(SIZE_M_)(session.prove.mHatTemp)); \
+  __push(BLOCKCAST(SIZE_M_)(op_2)); \
+  __code(SUBN, SIZE_M_); \
+  __code(STORE, public.apdu.data, SIZE_M_); \
+} while (0)
+
+  /* Multiply c with m */
+//   __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
+//  __push(BLOCKCAST(SIZE_H)(session.prove.challenge)); \
+//  __push(BLOCKCAST(SIZE_M)(i == 0 ? masterSecret : credential->attribute[i - 1])); \
+//  __code(PRIM, PRIM_MULTIPLY, SIZE_M); \
 
 
 
