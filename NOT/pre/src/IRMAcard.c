@@ -897,7 +897,6 @@ void processVerification(void) {
         /* \hat{r_prima} */
         
         if (P2 == 0x24) {
-          ComputeHat();
           
           // 1. r' = -ra
           // XXXX: Is length OK here?
@@ -905,7 +904,7 @@ void processVerification(void) {
           
           // 2. \hat{r'} = \tilde{r} + r'*c 
           
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x05); 
+          ComputeHat();
           crypto_compute_r_prima(P1);
 
           Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
@@ -917,10 +916,11 @@ void processVerification(void) {
         
         if (P2 == 0x25) {
           multosBlockMultiply3();
-          
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x03);
+
+          ComputeHat();
+          Fill(SIZE_M_, session.prove.mHatTemp, 0x03); // XXXX: Fix substraction here.
           multosBlockSubtract(SIZE_M_, session.prove.mHatTemp, session.prove.op2, session.prove.mHatTemp); //op2
-          
+       
           /* XXXX: Fix current subtraction to avoid the following statement*/
           Copy(10, public.apdu.data, session.prove.mHatTemp + SIZE_M_ - 10);
           Copy(SIZE_M_ - 10, public.apdu.data + 10, session.prove.mHatTemp);
@@ -932,9 +932,7 @@ void processVerification(void) {
         /* \hat{b} */
         
         if (P2 == 0x26) {
-          //ComputeHat();
-          
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x04); 
+          ComputeHat();
           crypto_compute_b(P1);
 
           Copy(SIZE_M_, public.apdu.data, session.prove.mHatTemp);
