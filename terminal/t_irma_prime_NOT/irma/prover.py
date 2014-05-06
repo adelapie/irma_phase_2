@@ -76,7 +76,11 @@ CMD_GET_MS_COMMITMENT_2 = [0x80, 0x2C, 0x00, 0x03]
 CMD_GET_C = [0x80, 0x2C, 0x00, 0x07]
 
 CMD_GET_C_TILDE = [0x80, 0x2C, 0x00, 0x23]
-CMD_GET_H_HAT = [0x80, 0x2C, 0x00, 0x24]
+
+CMD_GET_R_PRIMA_HAT = [0x80, 0x2C, 0x00, 0x24]
+
+CMD_GET_A_HAT = [0x80, 0x2C, 0x00, 0x25]
+CMD_GET_B_HAT = [0x80, 0x2C, 0x00, 0x26]
 
 CMD_GET_R_HAT = [0x80, 0x2C, 0x00, 0x06]
 
@@ -232,13 +236,31 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
   v = irma_util.APDU2integer(data)
 
   if DEBUG:
-    print "hat{h}"
+    print "hat{b}"
 
-  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_H_HAT)
-  irma_util.print_details(DEBUG, CMD_GET_H_HAT, r, t, n)
+  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_B_HAT)
+  irma_util.print_details(DEBUG, CMD_GET_B_HAT, r, t, n)
 
   data, sw1, sw2 = r
-  h_hat = irma_util.APDU2integer(data)
+  b_hat = irma_util.APDU2integer(data)
+
+  if DEBUG:
+    print "hat{a}"
+
+  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_A_HAT)
+  irma_util.print_details(DEBUG, CMD_GET_A_HAT, r, t, n)
+
+  data, sw1, sw2 = r
+  a_hat = irma_util.APDU2integer(data)
+
+  if DEBUG:
+    print "hat{r prima}"
+
+  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_R_PRIMA_HAT)
+  irma_util.print_details(DEBUG, CMD_GET_R_PRIMA_HAT, r, t, n)
+
+  data, sw1, sw2 = r
+  r_prima_hat = irma_util.APDU2integer(data)
 
   if DEBUG:
     print "hat{r}"
@@ -275,22 +297,21 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
 
   data, sw1, sw2 = r
   C = irma_util.APDU2integer(data)
-
+    
   a = a % pk_i['N']
   C = C % pk_i['N']
 
   ms = ms % pk_i['N'] 
   m1 = m1 % pk_i['N'] 
   
-  # \tilde{Co}
-
   C_o = (C ** (-1 * c) ) * (pk_i['Z'] ** m1) * (pk_i['S'] ** r_hat)
 
-  # \tilde{C}
-  
-  C_tilde = ((C ** (-1 * c)) * ((pk_i['Z'] ** 2) ** h_hat) * (pk_i['S'] ** r_hat)) % pk_i['N']
+  m_r = integer(int("0000000000000000000000000000000000000000000000000000000000000007", 16)) 
+  m_t =   integer(int("000000000000000000000000000000000000000000000000000000000000001E", 16)) # 30 = (2, 3, 5)
+
+  C_NOT_t2 = (pk_i['Z'] ** (-1 * c)) * (C ** a_hat) * ((pk_i['Z'] ** m_r) ** b_hat) * (pk_i['S'] ** r_prima_hat) % pk_i['N']
     
-  input = { 'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'C':C, 'Co':C_o, 'C_t':C_tilde }
+  input = { 'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'C':C, 'Co':C_o, 'C_t':C_NOT_t2 }
   m = { '1':m1 }
   
   verifier = protocol_ibm12.Verifier(pk_i, irma_util.APDU2integer(CONTEXT))
