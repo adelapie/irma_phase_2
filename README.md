@@ -47,16 +47,17 @@ These modifications run on the implementation of the IRMA card developed by Pim 
 
 #### Optimizations
 
-- selective disclosure: Utilization of a PRNG for recomputing
+- Utilization of a PRNG for recomputing
 pseudorandomness during the generation of both t-/s-values.
 https://github.com/adelapie/irma_phase_2/tree/master/selective_disclosure
 - prime-encoding:
-	* AND https://github.com/adelapie/irma_phase_2/tree/master/AND.
+	* AND https://github.com/adelapie/irma_phase_2/tree/master/AND (ph: hide all, pr: reveal n attributes)
+	* NOT https://github.com/adelapie/irma_phase_2/tree/master/NOT
 
 #### Protocol extensions
 
-- nyms: Idemix standard pseudonyms.
-- dnym: Idemix standard psudonyms in combination with domain ones.
+- nyms: Idemix standard pseudonyms https://github.com/adelapie/irma_phase_2/tree/master/nym
+- dnym: Idemix standard psudonyms in combination with domain ones https://github.com/adelapie/irma_phase_2/tree/master/dnym
 
 #### Multi-credential proofs
 
