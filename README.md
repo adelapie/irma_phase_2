@@ -63,6 +63,7 @@ https://github.com/adelapie/irma_phase_2/tree/master/selective_disclosure
 
 - eq_proof: Equality proof of representation. In this example ```pirma.py``` first issues two
 credentials and then perform an equality proof of representation based on their master secret.
+https://github.com/adelapie/irma_phase_2/tree/master/eq_proof
 
 ### References
 
