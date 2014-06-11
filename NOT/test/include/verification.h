@@ -321,13 +321,13 @@ do { \
   __code(STOREI, SIZE_M_); \
 } while (0)
 
-#define multosBlockMultiply3() \
+#define hat_a_op_1() \
 do \
 { \
-  __push (BLOCKCAST(SIZE_H)(session.prove.challenge)); \
-  __push (BLOCKCAST(SIZE_M)(a_long)); \
-  __code (PRIM, PRIM_MULTIPLY, SIZE_H); \
-  __code (STORE, session.prove.op2, SIZE_M*2); \
+__push (BLOCKCAST(1)(&a_test)); \
+__push (BLOCKCAST(SIZE_H)(session.prove.challenge)); \
+__code (PRIM, PRIM_MULTIPLY, SIZE_H); \
+__code (STORE, session.prove.mHatTemp, SIZE_H); \
 } while (0)
 
 #endif // __verification_H

@@ -88,6 +88,8 @@ do \
 #define multosBlockSubtract(blockLength, block1, block2, result) \
     __BINARY_OPN (blockLength, SUBN, result, block1, block2)
 
+
+
 #define r_prima_op_1(block1, block2, result) \
 do \
 { \
@@ -95,15 +97,6 @@ do \
   __push (BLOCKCAST(SIZE_M)(__typechk(unsigned char *, block2))); \
   __code (PRIM, PRIM_MULTIPLY, SIZE_M); \
   __code (STORE, __typechk(unsigned char *, result), SIZE_M); \
-} while (0)
-
-#define multosBlockMultiply(blockLength, block1, block2, result) \
-do \
-{ \
-  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block1))); \
-  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block2))); \
-  __code (PRIM, PRIM_MULTIPLY, blockLength); \
-  __code (STORE, __typechk(unsigned char *, result), blockLength); \
 } while (0)
 
 #define r_minus(block1, block2, result) \

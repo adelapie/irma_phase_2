@@ -149,8 +149,6 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
     /* 2. C ** \tilde{a} */
 
   ComputeHat();
-  Fill(SIZE_M_, session.prove.mHatTemp, 0x03); // XXXX: Fix substraction
-
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, session.prove.C, public.prove.buffer.number[1]);          
 
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  

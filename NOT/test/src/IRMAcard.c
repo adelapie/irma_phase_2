@@ -164,6 +164,7 @@ IRMALogEntry *logEntry;
 // XXXX: TODO: Make r random
 unsigned char r[SIZE_M] = {0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x11,0x2a,0xbc,0xdd,0xc3,0x1A,0xcd,0x01,0x06,0x43};
 unsigned char a_long[SIZE_M] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03};
+unsigned char a_test = 0x03;
 
 unsigned char a_short; 			/* The product of -1*a will be stored here */
 unsigned char minus_one = 0xff; 	/* two's complement -1 */
@@ -921,18 +922,16 @@ void processVerification(void) {
         /* \hat{a} */
         
         if (P2 == 0x25) {
-          multosBlockMultiply3();
 
+          hat_a_op_1();
+
+          Fill(SIZE_M_, session.prove.op2, 0x00);
+          Copy(SIZE_H,  session.prove.op2 + (SIZE_M_ - SIZE_H), session.prove.mHatTemp);
+     
           ComputeHat();
-          Fill(SIZE_M_, session.prove.mHatTemp, 0x03); // XXXX: Fix substraction here.
-          multosBlockSubtract(SIZE_M_, session.prove.mHatTemp, session.prove.op2, session.prove.mHatTemp); //op2
-       
-          /* XXXX: Fix current subtraction to avoid the following statement*/
-          Copy(10, public.apdu.data, session.prove.mHatTemp + SIZE_M_ - 10);
-          Copy(SIZE_M_ - 10, public.apdu.data + 10, session.prove.mHatTemp);
-          
+          multosBlockSubtract(SIZE_M_, session.prove.mHatTemp, session.prove.op2, public.apdu.data); //op2
+                                                                                                                            
           APDU_returnLa(SIZE_M_);
-        
         } 
 
         /* \hat{b} */
