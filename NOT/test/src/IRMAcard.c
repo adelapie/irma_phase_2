@@ -906,7 +906,9 @@ void processVerification(void) {
 
           //a = (-1)*a
           r_minus(&minus_one, &a, session.prove.mHatTemp);
-          Copy(1, &a_short, session.prove.mHatTemp + 1);
+          Copy(1, &a_short, session.prove.mHatTemp + 1); // Only LSB is important
+                                                         // in two's complement
+                                                         // multiplication.
 
           r_prima_op_1(&a_short, r, session.prove.test);
 
@@ -925,7 +927,9 @@ void processVerification(void) {
 
           hat_a_op_1();
 
-          Fill(SIZE_M_, session.prove.op2, 0x00);
+          Fill(SIZE_M_, session.prove.op2, 0x00); // a*c is aligned to mHatTemp's size
+                                                  // before substraction
+                                                  
           Copy(SIZE_H,  session.prove.op2 + (SIZE_M_ - SIZE_H), session.prove.mHatTemp);
      
           ComputeHat();
