@@ -457,6 +457,8 @@ void gcd_bcd_full(unsigned char *n1, unsigned char *n2)
 
 } 
 
+/* Euclidean algorithm (Lehmer) for parameters of GCD_MAX_SIZE = 4 bytes */
+
 void gcd_lehmer_mini(unsigned char *n1, unsigned char *n2, unsigned char *r)
 {
   unsigned char a[GCD_MAX_SIZE_2]; 
@@ -544,7 +546,7 @@ void gcd_lehmer_mini(unsigned char *n1, unsigned char *n2, unsigned char *r)
     Copy(GCD_MAX_SIZE_2, C, C_DEFAULT);
     Copy(GCD_MAX_SIZE_2, D, D_DEFAULT);
 
-    while(1) { // segundo bucle
+    while(1) { // second loop
     
       multosBlockIncrement(1, &r2);
     
@@ -622,9 +624,9 @@ void gcd_lehmer_mini(unsigned char *n1, unsigned char *n2, unsigned char *r)
     /* Last step */
   gcd_euclid_mini(a, b, r);
   Copy(GCD_MAX_SIZE_2, public.apdu.data, r); 
-
-//  Copy(GCD_MAX_SIZE_2, public.apdu.data, tmp_3); 
 }
+
+/* Euclidean algorithm (Lehmer) for parameters of GCD_MAX_SIZE = 9 bytes */
 
 void gcd_lehmer_full(unsigned char *n1, unsigned char *n2, unsigned char *out)
 {
@@ -713,15 +715,12 @@ void gcd_lehmer_full(unsigned char *n1, unsigned char *n2, unsigned char *out)
     generateXY_long(a, x);
     generateXY_long(b, y);
 
-//    Copy(GCD_MAX_SIZE, public.apdu.data, x);
-//    return;
-
     Copy(GCD_MAX_SIZE, A, A_DEFAULT);
     Copy(GCD_MAX_SIZE, B, B_DEFAULT);
     Copy(GCD_MAX_SIZE, C, C_DEFAULT);
     Copy(GCD_MAX_SIZE, D, D_DEFAULT);
 
-    while(1) { // segundo bucle
+    while(1) { // second loop
     
       multosBlockIncrement(1, &r2);
     
@@ -787,21 +786,137 @@ void gcd_lehmer_full(unsigned char *n1, unsigned char *n2, unsigned char *out)
       Copy(GCD_MAX_SIZE, a, tmp_1);
       Copy(GCD_MAX_SIZE, b, tmp_2);
 
-//      Copy(GCD_MAX_SIZE, public.apdu.data, a);
-
     } else {
       multosBlockDivide(GCD_MAX_SIZE, a, b, t, s);
       Copy(GCD_MAX_SIZE, a, b);
       Copy(GCD_MAX_SIZE, b, s);
     }
-
-
    }
 
     /* Last step */
   gcd_euclid(a, b, r);
   Copy(GCD_MAX_SIZE, out, r); 
-
 }
 
+/* Extended Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes */
+
+void gcd_ext_euclid(unsigned char *a, unsigned char *b)
+{
+  unsigned char q[GCD_MAX_SIZE]; /* quotient of Euclidean division */
+  unsigned char r[GCD_MAX_SIZE]; /* remainder of Euclidean division */
+
+  unsigned char x[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+  unsigned char y[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+
+  unsigned char u[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+  unsigned char v[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+
+  unsigned char m[GCD_MAX_SIZE]; /*  */
+  unsigned char n[GCD_MAX_SIZE]; /*  */
+
+  unsigned char u_mul_q[GCD_MAX_SIZE]; /*  */
+  unsigned char v_mul_q[GCD_MAX_SIZE]; /*  */
+
+  unsigned char z[GCD_MAX_SIZE]; /* buffer of zeroes for comparing */
+
+  unsigned char finish = 0x00;
+
+  Clear(GCD_MAX_SIZE, z);
+
+  while (1) {
+    finish = compareBlock(GCD_MAX_SIZE, a, z);
+
+    if (finish == 0x02)
+      break;
+
+    multosBlockDivide(GCD_MAX_SIZE, b, a, q, r);
+    
+    //  m == x-u*q
+    //  n == y-v*q
+   
+    multosBlockMultiply(GCD_MAX_SIZE, u, q, u_mul_q);
+    multosBlockSubtract(GCD_MAX_SIZE, x, u_mul_q, m);               
+
+    multosBlockMultiply(GCD_MAX_SIZE, v, q, v_mul_q);               
+    multosBlockSubtract(GCD_MAX_SIZE, y, v_mul_q, n);               
+
+    Copy(GCD_MAX_SIZE, b, a);
+    Copy(GCD_MAX_SIZE, a, r);
+
+    Copy(GCD_MAX_SIZE, x, u);
+    Copy(GCD_MAX_SIZE, y, v);
+
+    Copy(GCD_MAX_SIZE, u, m);
+    Copy(GCD_MAX_SIZE, v, n);
+  }
+
+  /*
+    b = gcd
+    (x, y) is the solution of the diophantine equation
+  */
+
+    Copy(GCD_MAX_SIZE, public.apdu.data, x);
+} 
+
+/* Extended Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes 
+   Case #4
+*/
+
+void gcd_ext_euclid_case_4(unsigned char *a, unsigned char *b)
+{
+  unsigned char q[GCD_MAX_SIZE]; /* quotient of Euclidean division */
+  unsigned char r[GCD_MAX_SIZE]; /* remainder of Euclidean division */
+
+  unsigned char x[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+  unsigned char y[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+
+  unsigned char u[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+  unsigned char v[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+
+  unsigned char m[GCD_MAX_SIZE]; /*  */
+  unsigned char n[GCD_MAX_SIZE]; /*  */
+
+  unsigned char u_mul_q[GCD_MAX_SIZE*2]; /*  */
+  unsigned char v_mul_q[GCD_MAX_SIZE*2]; /*  */
+
+  unsigned char z[GCD_MAX_SIZE]; /* buffer of zeroes for comparing */
+
+  unsigned char finish = 0x00;
+
+  Clear(GCD_MAX_SIZE, z);
+
+  while (1) {
+    finish = compareBlock(GCD_MAX_SIZE, a, z);
+
+    if (finish == 0x02)
+      break;
+
+    multosBlockDivide(GCD_MAX_SIZE, b, a, q, r);
+    
+    //  m == x-u*q
+    //  n == y-v*q
+   
+    multosBlockMultiplyExtended(GCD_MAX_SIZE, u, q, u_mul_q);
+    multosBlockSubtract(GCD_MAX_SIZE, x, u_mul_q, m);               
+
+    multosBlockMultiplyExtended(GCD_MAX_SIZE, v, q, v_mul_q);               
+    multosBlockSubtract(GCD_MAX_SIZE, y, v_mul_q, n);               
+
+    Copy(GCD_MAX_SIZE, b, a);
+    Copy(GCD_MAX_SIZE, a, r);
+
+    Copy(GCD_MAX_SIZE, x, u);
+    Copy(GCD_MAX_SIZE, y, v);
+
+    Copy(GCD_MAX_SIZE, u, m);
+    Copy(GCD_MAX_SIZE, v, n);
+  }
+
+  /*
+    b = gcd
+    (x, y) is the solution of the diophantine equation
+  */
+
+    Copy(GCD_MAX_SIZE, public.apdu.data, y);
+} 
 
