@@ -52,7 +52,8 @@ pseudorandomness during the generation of both t-/s-values.
 https://github.com/adelapie/irma_phase_2/tree/master/selective_disclosure
 - prime-encoding:
 	* AND https://github.com/adelapie/irma_phase_2/tree/master/AND (ph: hide all, pr: reveal n attributes)
-	* NOT https://github.com/adelapie/irma_phase_2/tree/master/NOT
+	* NOT https://github.com/adelapie/irma_phase_2/tree/master/NOT (pre: precomputation of the values of the
+diophantine equation, euclid: solving the diophantine equation at run time)
 
 #### Protocol extensions
 
