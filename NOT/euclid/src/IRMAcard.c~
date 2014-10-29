@@ -80,6 +80,7 @@
 #include "sizes.h"
 #include "utils.h"
 #include "verification.h"
+#include "gcd.h"
 
 /********************************************************************/
 /* Public segment (APDU buffer) variable declaration                */
@@ -169,8 +170,10 @@ unsigned char a_test = 0x03;
 unsigned char a_short; 			/* The product of -1*a will be stored here */
 unsigned char minus_one = 0xff; 	/* two's complement -1 */
 
-unsigned char a = 0xfd; 		/* The first part of the pair (a, b) from the diphantine equation */
-unsigned char b = 0x0d;			/* The second part of the pair (a, b) from the diphantine equation */
+/* Precomputed equation */
+
+unsigned char a;// = 0xfd; 		/* The first part of the pair (a, b) from the diphantine equation */
+unsigned char b;// = 0x0d;			/* The second part of the pair (a, b) from the diphantine equation */
 
 // Z ** 7
 
@@ -184,6 +187,8 @@ Number hide_attr_1 = {
   0x90,0x9a,0x8a,0xb0,0xc7,0x16,0x67,0x71,0x45,0xd4,0x38,0x06,0x68,0x6a,0xff,0x36,0x7f,
   0x97,0x9c,0x4b,0x43,0x60,0xfa,0xb4,0xf5,0xa1}; /* We precompute Z^7. We prove that the a
 ttribute corresponding to the prime 7 is not in our credential */
+
+#include <stdio.h>
 
 /********************************************************************/
 /* APDU handling                                                    */
@@ -925,6 +930,20 @@ void processVerification(void) {
         
         if (P2 == 0x25) {
 
+          unsigned char a_1[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07};
+          unsigned char b_1[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e};
+
+          gcd_ext_euclid(a_1, b_1);
+
+          b = public.apdu.data[GCD_MAX_SIZE - 1];
+          a = public.apdu.data[GCD_MAX_SIZE*2 - 1];
+
+//          Copy(1, &a, &public.apdu.data[GCD_MAX_SIZE - 1]);
+//          Copy(1, &b, &public.apdu.data[GCD_MAX_SIZE*2 - 1]);
+
+//            a = 0xfd; 	
+//            b = 0x0d;		
+
           hat_a_op_1();
 
           Fill(SIZE_M_, session.prove.op2, 0x00); // a*c is aligned to mHatTemp's size
@@ -941,10 +960,56 @@ void processVerification(void) {
         /* \hat{b} */
         
         if (P2 == 0x26) {
+        
+/* Case NOT:
+
+      We prove that '7' is not in our credential (m_t, R1). In our case, mt = 30, containing
+      (2, 3, 5), represented as 0x1e.
+
+*/
+//          APDU_returnLa(GCD_MAX_SIZE*2);
+
+//oo          Copy(1, &a, &public.apdu.data[GCD_MAX_SIZE - 1]);
+//oo          Copy(1, &b, &public.apdu.data[GCD_MAX_SIZE*2 - 1]);
+
+//            a = public.apdu.data[GCD_MAX_SIZE - 1];
+//            b = public.apdu.data[GCD_MAX_SIZE*2 - 1];
+
+
+//          Clear(GCD_MAX_SIZE*2, public.apdu.data);
+//          Copy(1, public.apdu.data, &b);
+//          APDU_returnLa(GCD_MAX_SIZE*2);
+//          APDU_returnLa(1);
+
+//          Copy(1, &b, &public.apdu.data[GCD_MAX_SIZE*2 - 1]);
+
           ComputeHat();
           crypto_compute_b(P1);
 
           APDU_returnLa(SIZE_M_);
+
+//            Copy(1, public.apdu.data, );
+
+
+/* Case 1
+          unsigned char a[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+          unsigned char b[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x13, 0x8d};
+*/
+
+/* Case 2
+          unsigned char a[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+          unsigned char b[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x47, 0x2f, 0xf1, 0x71};
+*/
+
+/* Case 3
+          unsigned char a[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0xea, 0x5f};
+          unsigned char b[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x55, 0x6a, 0x82, 0xf6, 0x49, 0x61};
+*/
+
+/* Case 4
+          unsigned char a[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x01, 0xf1, 0xd3, 0x6b, 0xfb};
+          unsigned char b[GCD_MAX_SIZE] = {0x06, 0x02, 0x64, 0x75, 0xbf, 0x3b, 0x86, 0x00, 0x00};
+*/
         } 
 
         /* C */
@@ -1088,3 +1153,5 @@ void processAdministration(void) {
       break;
   }
 }
+
+

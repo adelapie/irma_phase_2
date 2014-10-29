@@ -108,4 +108,77 @@ do \
   __code (STORE, __typechk(unsigned char *, result), 1 + 1); \
 } while (0)
 
+#define multosBlockDivide(blockLength, numerator, denominator, quotient, remainder) \
+do  \
+{ \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, numerator))); \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, denominator))); \
+  __code (PRIM, PRIM_DIVIDEN, blockLength); \
+  __code (STORE, __typechk(unsigned char *, remainder), blockLength); \
+  __code (STORE, __typechk(unsigned char *, quotient), blockLength);     \
+} while (0)
+
+#define multosBlockCompare(blockLength, block1, block2, result) \
+do \
+{ \
+  __push (__typechk(unsigned short, blockLength)); \
+  __push (/*__BLOCKCAST(blockLength)*/(__typechk(unsigned char *, block1))); \
+  __push (/*__BLOCKCAST(blockLength)*/(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MEMORY_COMPARE); \
+  __code (PRIM, PRIM_LOAD_CCR); \
+  __code (PRIM, PRIM_BIT_MANIPULATE_BYTE, 0x83, 0x09); \
+  __code (STORE, __typechk(unsigned char *, result), 1); \
+} while (0)
+
+
+
+#define __UNARY_OPN(N, OP, V) \
+  __code(OP, V, N);
+
+#define multosBlockIncrement(blockLength, block) \
+do \
+{ \
+  __UNARY_OPN (blockLength, INCN, block); \
+} while (0)
+
+#define multosBlockShiftRight(blockLength, numShiftBits, blockSource, blockDest) \
+do \
+{ \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, blockSource))); \
+  __code (PRIM, PRIM_SHIFT_RIGHT, blockLength, numShiftBits); \
+  __code (STORE, __typechk(unsigned char *, blockDest), blockLength); \
+} while (0)
+
+#define multosBlockShiftLeft(blockLength, numShiftBits, blockSource, blockDest) \
+do \
+{ \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, blockSource))); \
+  __code (PRIM, PRIM_SHIFT_LEFT, blockLength, numShiftBits); \
+  __code (STORE, __typechk(unsigned char *, blockDest), blockLength); \
+} while (0)
+
+#define multosBlockAnd(blockLength, block1, block2, result) \
+    __BINARY_OPN (blockLength, ANDN, result, block1, block2)
+
+#define multosBlockAdd(blockLength, block1, block2, result) \
+    __BINARY_OPN (blockLength, ADDN, result, block1, block2)                      
+
+#define multosBlockMultiply(blockLength, block1, block2, result) \
+do \
+{ \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block1))); \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MULTIPLY, blockLength); \
+  __code (STORE, __typechk(unsigned char *, result), blockLength); \
+} while (0)
+
+#define multosBlockMultiplyExtended(blockLength, block1, block2, result) \
+do \
+{ \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block1))); \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MULTIPLY, blockLength); \
+  __code (STORE, __typechk(unsigned char *, result), blockLength*2); \
+} while (0)
+                      
 #endif // __utils_H

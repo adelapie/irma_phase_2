@@ -1,0 +1,923 @@
+/**
+ * utils.c
+ *
+ * This file is part of IRMAcard.
+ *
+ * IRMAcard is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * IRMAcard is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with IRMAcard. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Copyright (C) 
+ *   Antonio de la Piedra <a.delapiedra@cs.ru.nl>, Radboud University Nijmegen.
+ */
+
+#include "gcd.h"
+
+#include "utils.h"
+#include "ASN1.h"
+#include "debug.h"
+#include "math.h"
+#include "memory.h"
+#include "SHA.h"
+#include "types.h"
+#include "types.h"
+#include "types.debug.h"
+#include "APDU.h"
+#include "auth.h"
+#include "CHV.h"
+#include "debug.h"
+#include "issuance.h"
+#include "math.h"
+#include "memory.h"
+#include "logging.h"
+#include "random.h"
+#include "RSA.h"
+#include "SM.h"
+#include "sizes.h"
+#include "utils.h"
+#include "verification.h"
+#include "gcd.h"
+
+extern PublicData public;
+extern SessionData session;
+extern unsigned char bit_size;
+
+// input_1 a, b
+// input_2, x, y
+// output: input_2, se trata de input_2 >> size
+void generateXY_long(unsigned char *input_1, unsigned char *input_2) {
+  unsigned char amount = 0x00;
+  
+  unsigned char n_1[GCD_MAX_SIZE];
+  unsigned char n_2[GCD_MAX_SIZE];
+  
+  Copy(GCD_MAX_SIZE, n_1, input_1);
+  Copy(GCD_MAX_SIZE, n_2, input_2);
+  
+  switch(input_1[0] >> 4) { // obtain upper nibble
+    case 0x00:
+      multosBlockShiftRight(GCD_MAX_SIZE, 37, n_1, n_2);
+      break;
+    case 0x01:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_1 & 0xff), n_1, n_2);
+      break;
+    case 0x02:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_2 & 0xff), n_1, n_2);
+      break;
+    case 0x03:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_3 & 0xff), n_1, n_2);
+      break;
+    case 0x04:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_4 & 0xff), n_1, n_2);
+      break;
+    case 0x05:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_5 & 0xff), n_1, n_2);
+      break;
+    case 0x06:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_6 & 0xff), n_1, n_2);
+      break;
+    case 0x07:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_7 & 0xff), n_1, n_2);
+      break;
+    case 0x08:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_8 & 0xff), n_1, n_2);
+      break;
+    case 0x09:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_9 & 0xff), n_1, n_2);
+      break;
+    case 0x0a:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_A & 0xff), n_1, n_2);
+      break;
+    case 0x0b:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_B & 0xff), n_1, n_2);
+      break;
+    case 0x0c:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_C & 0xff), n_1, n_2);
+      break;
+    case 0x0d:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_D & 0xff), n_1, n_2);
+      break;
+    case 0x0e:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_E & 0xff), n_1, n_2);
+      break;
+    case 0x0f:
+      multosBlockShiftRight(GCD_MAX_SIZE, (N_BITS_F & 0xff), n_1, n_2);
+      break;
+  }
+  Copy(GCD_MAX_SIZE, input_2, n_2);
+}
+
+unsigned char compareBlock(unsigned char size, unsigned char *b1, unsigned char *b2)
+{
+  unsigned char result = 0x00;
+  
+  multosBlockCompare(size, b1, b2, &result);
+
+  if (result == 0x00) 		// (b1 > b2)
+    return 0x01;
+  else if (result == 0x01) 	// (b1 = b2)
+    return 0x02;
+  else				// (b1 < b2)
+    return 0x03;
+}
+
+void prepare_array(unsigned char *a, int size)
+{
+  int i = 0;
+  
+  for(i = 0; i < size - 1; i++) 
+    a[i] &= 0x00;
+            
+  a[size - 1] &= 0x01;
+}
+
+/********************************************************************/
+/* GCD and methods for solving diophantine linear quations          */
+/********************************************************************/
+
+/* Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes */
+
+void gcd_euclid(unsigned char *a, unsigned char *b, unsigned char *t)
+{
+  unsigned char q[GCD_MAX_SIZE]; /* quotient of Euclidean division */
+  unsigned char r[GCD_MAX_SIZE]; /* remainder of Euclidean division */
+  unsigned char y[GCD_MAX_SIZE]; /* result */
+  unsigned char z[GCD_MAX_SIZE]; /* buffer of zeroes for comparing */
+
+  unsigned char finish = 0x00;
+
+  Clear(GCD_MAX_SIZE, z);
+
+  while (1) {
+    multosBlockCompare(GCD_MAX_SIZE, b, z, &finish);
+
+    if (finish == 0x01)
+      break;
+              
+    CopyBytes(GCD_MAX_SIZE, y, b);
+
+    multosBlockDivide(GCD_MAX_SIZE, a, b, q, r);
+    CopyBytes(GCD_MAX_SIZE, b, r);
+    Copy(GCD_MAX_SIZE, a, y);
+  }
+
+    Copy(GCD_MAX_SIZE, t, a);
+} 
+
+/* Euclidean algorithm for parameters of GCD_MAX_SIZE_2 = 4 bytes */
+
+void gcd_euclid_mini(unsigned char *a, unsigned char *b, unsigned char *t)
+{
+  unsigned char q[GCD_MAX_SIZE_2]; /* quotient of Euclidean division */
+  unsigned char r[GCD_MAX_SIZE_2]; /* remainder of Euclidean division */
+  unsigned char y[GCD_MAX_SIZE_2]; /* result */
+  unsigned char z[GCD_MAX_SIZE_2]; /* buffer of zeroes for comparing */
+
+  unsigned char finish = 0x00;
+
+  Clear(GCD_MAX_SIZE_2, z);
+
+  while (1) {
+    multosBlockCompare(GCD_MAX_SIZE_2, b, z, &finish);
+
+    if (finish == 0x01)
+      break;
+              
+    CopyBytes(GCD_MAX_SIZE_2, y, b);
+
+    multosBlockDivide(GCD_MAX_SIZE_2, a, b, q, r);
+    CopyBytes(GCD_MAX_SIZE_2, b, r);
+    Copy(GCD_MAX_SIZE_2, a, y);
+  }
+
+    Copy(GCD_MAX_SIZE_2, t, a);
+} 
+
+/* Euclidean algorithm (Stein's) for parameters of GCD_MAX_SIZE_2 = 4 bytes */
+
+void gcd_bcd_mini(unsigned char *n1, unsigned char *n2)
+{
+  unsigned char a[GCD_MAX_SIZE_2]; 
+  unsigned char b[GCD_MAX_SIZE_2]; 
+  unsigned char t[GCD_MAX_SIZE_2]; 
+
+  unsigned char k[GCD_MAX_SIZE_2];
+  unsigned char tmp_1[GCD_MAX_SIZE_2];
+  unsigned char tmp_2[GCD_MAX_SIZE_2];
+  unsigned char zeroes[GCD_MAX_SIZE_2];
+
+  unsigned char r = 0x00;
+  unsigned char s = 0x00;
+
+  Clear(GCD_MAX_SIZE_2, k);
+  Clear(GCD_MAX_SIZE_2, tmp_1);
+  Clear(GCD_MAX_SIZE_2, tmp_2);
+  Clear(GCD_MAX_SIZE_2, zeroes);
+
+  Copy(GCD_MAX_SIZE_2, a, n1);
+  Copy(GCD_MAX_SIZE_2, b, n2);
+
+  // Swap if a < b
+
+  r = compareBlock(GCD_MAX_SIZE_2, a, b);
+
+  if (r == 0x03) { // a < b
+    Copy(GCD_MAX_SIZE_2, tmp_1, a);
+    Copy(GCD_MAX_SIZE_2, a, b);
+    Copy(GCD_MAX_SIZE_2, b, tmp_1);  
+  }
+
+  // Return a if b == 0
+
+  r = compareBlock(GCD_MAX_SIZE_2, zeroes, b);
+
+  if (r == 0x02) { // {0}^n == b
+    Copy(GCD_MAX_SIZE_2, public.apdu.data, a);
+    return;
+  }
+
+  while(1) {
+    Copy(GCD_MAX_SIZE_2, tmp_1, a);
+    Copy(GCD_MAX_SIZE_2, tmp_2, b);
+
+    zeroes[GCD_MAX_SIZE_2 - 1] = 0x01;
+
+    multosBlockAnd(GCD_MAX_SIZE_2, zeroes, tmp_1, tmp_1);
+    multosBlockAnd(GCD_MAX_SIZE_2, zeroes, tmp_2, tmp_2);
+
+    zeroes[GCD_MAX_SIZE_2 - 1] = 0x00;
+
+    r = compareBlock(GCD_MAX_SIZE_2, zeroes, tmp_1);
+    s = compareBlock(GCD_MAX_SIZE_2, zeroes, tmp_2);
+
+    if (r != 0x02 || s != 0x02)
+      break;
+ 
+    multosBlockShiftRight(GCD_MAX_SIZE_2, 1, a, a);
+    multosBlockShiftRight(GCD_MAX_SIZE_2, 1, b, b);
+
+    multosBlockIncrement(GCD_MAX_SIZE_2, k);
+  }
+
+  while(1) {
+  
+    r = compareBlock(GCD_MAX_SIZE_2, a, b); // a == b
+    if (r == 0x02)
+      break;
+
+    r = compareBlock(GCD_MAX_SIZE_2, a, zeroes); // a == 0
+    if (r == 0x02)
+      break;
+             
+    while(1) {
+      Copy(GCD_MAX_SIZE_2, tmp_1, a);
+
+      zeroes[GCD_MAX_SIZE_2 - 1] = 0x01;
+      multosBlockAnd(GCD_MAX_SIZE_2, zeroes, tmp_1, tmp_1);
+      zeroes[GCD_MAX_SIZE_2 - 1] = 0x00;
+
+      r = compareBlock(GCD_MAX_SIZE_2, zeroes, tmp_1);
+
+      if (r != 0x02) // a & 1 == 0?	
+        break;
+
+      multosBlockShiftRight(GCD_MAX_SIZE_2, 1, a, a);
+    }  
+
+    while(1) {
+      Copy(GCD_MAX_SIZE_2, tmp_2, b);
+
+      zeroes[GCD_MAX_SIZE_2 - 1] = 0x01;
+      multosBlockAnd(GCD_MAX_SIZE_2, zeroes, tmp_2, tmp_2);
+      zeroes[GCD_MAX_SIZE_2 - 1] = 0x00;
+
+      r = compareBlock(GCD_MAX_SIZE_2, zeroes, tmp_2);
+
+      if (r != 0x02) // b & 1 == 0?	
+        break;
+
+      multosBlockShiftRight(GCD_MAX_SIZE_2, 1, b, b);
+    }  
+
+    r = compareBlock(GCD_MAX_SIZE_2, a, b);
+  
+    //a >= b
+    
+    if (r == 0x01 || r == 0x02) {
+      multosBlockSubtract(GCD_MAX_SIZE_2, a, b, a);               
+      multosBlockShiftRight(GCD_MAX_SIZE_2, 1, a, a);
+    } else {
+      Copy(GCD_MAX_SIZE_2, tmp_1, a);
+      multosBlockSubtract(GCD_MAX_SIZE_2, b, a, a);               
+      multosBlockShiftRight(GCD_MAX_SIZE_2, 1, a, a);
+      Copy(GCD_MAX_SIZE_2, b, tmp_1);
+    }
+  }
+  
+  b[0] <<= (k[0] << 8) | k[1];
+  Copy(GCD_MAX_SIZE_2, public.apdu.data, b);
+
+} 
+
+/* Euclidean algorithm (Stein's) for parameters of GCD_MAX_SIZE = 9 bytes */
+
+void gcd_bcd_full(unsigned char *n1, unsigned char *n2)
+{
+  unsigned char a[GCD_MAX_SIZE]; 
+  unsigned char b[GCD_MAX_SIZE]; 
+  unsigned char t[GCD_MAX_SIZE]; 
+
+  unsigned char k[GCD_MAX_SIZE];
+  unsigned char tmp_1[GCD_MAX_SIZE];
+  unsigned char tmp[GCD_MAX_SIZE];
+  unsigned char zeroes[GCD_MAX_SIZE];
+
+  unsigned char r = 0x00;
+  unsigned char s = 0x00;
+
+  Clear(GCD_MAX_SIZE, k);
+  Clear(GCD_MAX_SIZE, tmp_1);
+  Clear(GCD_MAX_SIZE, tmp);
+  Clear(GCD_MAX_SIZE, zeroes);
+
+  Copy(GCD_MAX_SIZE, a, n1);
+  Copy(GCD_MAX_SIZE, b, n2);
+
+  // Swap if a < b
+
+  r = compareBlock(GCD_MAX_SIZE, a, b);
+
+  if (r == 0x03) { // a < b
+    Copy(GCD_MAX_SIZE, tmp_1, a);
+    Copy(GCD_MAX_SIZE, a, b);
+    Copy(GCD_MAX_SIZE, b, tmp_1);  
+  }
+
+  // Return a if b == 0
+
+  r = compareBlock(GCD_MAX_SIZE, zeroes, b);
+
+  if (r == 0x02) { // {0}^n == b
+    Copy(GCD_MAX_SIZE, public.apdu.data, a);
+    return;
+  }
+
+  while(1) {
+    Copy(GCD_MAX_SIZE, tmp_1, a);
+    Copy(GCD_MAX_SIZE, tmp, b);
+
+    zeroes[GCD_MAX_SIZE - 1] = 0x01;
+
+    multosBlockAnd(GCD_MAX_SIZE, zeroes, tmp_1, tmp_1);
+    multosBlockAnd(GCD_MAX_SIZE, zeroes, tmp, tmp);
+
+    zeroes[GCD_MAX_SIZE - 1] = 0x00;
+
+    r = compareBlock(GCD_MAX_SIZE, zeroes, tmp_1);
+    s = compareBlock(GCD_MAX_SIZE, zeroes, tmp);
+
+    if (r != 0x02 || s != 0x02)
+      break;
+ 
+    multosBlockShiftRight(GCD_MAX_SIZE, 1, a, a);
+    multosBlockShiftRight(GCD_MAX_SIZE, 1, b, b);
+
+    multosBlockIncrement(GCD_MAX_SIZE, k);
+  }
+
+  while(1) {
+  
+    r = compareBlock(GCD_MAX_SIZE, a, b); // a == b
+    if (r == 0x02)
+      break;
+
+    r = compareBlock(GCD_MAX_SIZE, a, zeroes); // a == 0
+    if (r == 0x02)
+      break;
+             
+    while(1) {
+      Copy(GCD_MAX_SIZE, tmp_1, a);
+
+      zeroes[GCD_MAX_SIZE - 1] = 0x01;
+      multosBlockAnd(GCD_MAX_SIZE, zeroes, tmp_1, tmp_1);
+      zeroes[GCD_MAX_SIZE - 1] = 0x00;
+
+      r = compareBlock(GCD_MAX_SIZE, zeroes, tmp_1);
+
+      if (r != 0x02) // a & 1 == 0?	
+        break;
+
+      multosBlockShiftRight(GCD_MAX_SIZE, 1, a, a);
+    }  
+
+    while(1) {
+      Copy(GCD_MAX_SIZE, tmp, b);
+
+      zeroes[GCD_MAX_SIZE - 1] = 0x01;
+      multosBlockAnd(GCD_MAX_SIZE, zeroes, tmp, tmp);
+      zeroes[GCD_MAX_SIZE - 1] = 0x00;
+
+      r = compareBlock(GCD_MAX_SIZE, zeroes, tmp);
+
+      if (r != 0x02) // b & 1 == 0?	
+        break;
+
+      multosBlockShiftRight(GCD_MAX_SIZE, 1, b, b);
+    }  
+
+    r = compareBlock(GCD_MAX_SIZE, a, b);
+  
+    //a >= b
+    
+    if (r == 0x01 || r == 0x02) {
+      multosBlockSubtract(GCD_MAX_SIZE, a, b, a);               
+      multosBlockShiftRight(GCD_MAX_SIZE, 1, a, a);
+    } else {
+      Copy(GCD_MAX_SIZE, tmp_1, a);
+      multosBlockSubtract(GCD_MAX_SIZE, b, a, a);               
+      multosBlockShiftRight(GCD_MAX_SIZE, 1, a, a);
+      Copy(GCD_MAX_SIZE, b, tmp_1);
+    }
+  }
+  
+  /* XXXX: Adjust according to the parameter's size*/
+  /* XXXX: OK for cases 1-4 */
+
+  b[0] <<= (k[0] << 8) | k[1];
+  Copy(GCD_MAX_SIZE, public.apdu.data, b);
+
+} 
+
+/* Euclidean algorithm (Lehmer) for parameters of GCD_MAX_SIZE = 4 bytes */
+
+void gcd_lehmer_mini(unsigned char *n1, unsigned char *n2, unsigned char *r)
+{
+  unsigned char a[GCD_MAX_SIZE_2]; 
+  unsigned char b[GCD_MAX_SIZE_2]; 
+
+  unsigned char x[GCD_MAX_SIZE_2]; 
+  unsigned char y[GCD_MAX_SIZE_2]; 
+
+  unsigned char tmp_1[GCD_MAX_SIZE_2];
+  unsigned char tmp_2[GCD_MAX_SIZE_2];
+  unsigned char tmp_3[GCD_MAX_SIZE_2];
+  unsigned char tmp_4[GCD_MAX_SIZE_2];
+
+  unsigned char Aa[GCD_MAX_SIZE_2];
+  unsigned char Bb[GCD_MAX_SIZE_2*2];
+  unsigned char Ca[GCD_MAX_SIZE_2];
+  unsigned char Db[GCD_MAX_SIZE_2];
+  unsigned char t[GCD_MAX_SIZE_2*2];
+  unsigned char s[GCD_MAX_SIZE_2];
+
+  unsigned char zeroes[GCD_MAX_SIZE_2];
+
+  unsigned char A[GCD_MAX_SIZE_2]; 
+  unsigned char B[GCD_MAX_SIZE_2]; 
+  unsigned char C[GCD_MAX_SIZE_2]; 
+  unsigned char D[GCD_MAX_SIZE_2]; 
+  unsigned char T[GCD_MAX_SIZE_2]; 
+
+  unsigned char base[] = {0x40, 0x00, 0x00, 0x00};
+
+  unsigned char result = 0x00;
+  unsigned char r2 = 0x00;
+
+  unsigned short inc = 0x00;
+  const int i = 0;
+
+  const unsigned char A_DEFAULT[GCD_MAX_SIZE_2] = {0x00, 0x00, 0x00, 0x01};
+  const unsigned char B_DEFAULT[GCD_MAX_SIZE_2] = {0x00, 0x00, 0x00, 0x00};	
+  const unsigned char C_DEFAULT[GCD_MAX_SIZE_2] = {0x00, 0x00, 0x00, 0x00};
+  const unsigned char D_DEFAULT[GCD_MAX_SIZE_2] = {0x00, 0x00, 0x00, 0x01};
+
+  unsigned char y_plus_d[GCD_MAX_SIZE_2]; 
+  unsigned char y_plus_c[GCD_MAX_SIZE_2]; 
+  unsigned char x_plus_a[GCD_MAX_SIZE_2]; 
+  unsigned char x_plus_b[GCD_MAX_SIZE_2]; 
+
+  unsigned char q_mul_c[GCD_MAX_SIZE_2]; 
+  unsigned char q_mul_d[GCD_MAX_SIZE_2]; 
+  unsigned char q_mul_y[GCD_MAX_SIZE_2]; 
+
+  Clear(GCD_MAX_SIZE_2, x);
+  Clear(GCD_MAX_SIZE_2, y);
+
+  Clear(GCD_MAX_SIZE_2, tmp_1);
+  Clear(GCD_MAX_SIZE_2, tmp_2);
+  Clear(GCD_MAX_SIZE_2, tmp_3);
+  Clear(GCD_MAX_SIZE_2, tmp_4);
+
+  Clear(GCD_MAX_SIZE_2, zeroes);
+
+  Copy(GCD_MAX_SIZE_2, a, n1);
+  Copy(GCD_MAX_SIZE_2, b, n2);
+
+  /* XXXX: Optimize later in assembler and remove
+     extra calls to functions */
+
+  result = compareBlock(GCD_MAX_SIZE_2, a, b);
+  
+  if (result == 0x03) { // a < b
+    Copy(GCD_MAX_SIZE_2, tmp_1, a);
+    Copy(GCD_MAX_SIZE_2, a, b);
+    Copy(GCD_MAX_SIZE_2, b, tmp_1);  
+  }
+
+  while(1) { // while (b >= BASE)
+    result = compareBlock(GCD_MAX_SIZE_2, b, base);  
+    if (result == 0x03) 
+      break;
+
+    generateXY(a, x);
+    generateXY(b, y);
+
+    Copy(GCD_MAX_SIZE_2, A, A_DEFAULT);
+    Copy(GCD_MAX_SIZE_2, B, B_DEFAULT);
+    Copy(GCD_MAX_SIZE_2, C, C_DEFAULT);
+    Copy(GCD_MAX_SIZE_2, D, D_DEFAULT);
+
+    while(1) { // second loop
+    
+      multosBlockIncrement(1, &r2);
+    
+      multosBlockAdd(GCD_MAX_SIZE_2, y, D, y_plus_d);
+      multosBlockAdd(GCD_MAX_SIZE_2, y, C, y_plus_c);
+      multosBlockAdd(GCD_MAX_SIZE_2, x, A, x_plus_a);
+      multosBlockAdd(GCD_MAX_SIZE_2, x, B, x_plus_b);
+
+      result = compareBlock(GCD_MAX_SIZE_2, zeroes, y_plus_d);
+      if (result == 0x02) 
+        break;
+      
+
+      result = compareBlock(GCD_MAX_SIZE_2, zeroes, y_plus_c);
+      if (result == 0x02) 
+        break;
+      
+      multosBlockDivide(GCD_MAX_SIZE_2, x_plus_a, y_plus_c, tmp_1, tmp_2); //tmp_1 = q, tmp_2 = r
+      multosBlockDivide(GCD_MAX_SIZE_2, x_plus_b, y_plus_d, tmp_3, tmp_4); //tmp_3 = q, tmp_4 = r
+
+      result = compareBlock(GCD_MAX_SIZE_2, tmp_1, tmp_3);
+      if (result != 0x02)  // tmp_1 != tmp_3
+        break;
+
+      multosBlockMultiply(GCD_MAX_SIZE_2, tmp_1, C, q_mul_c);
+      multosBlockSubtract(GCD_MAX_SIZE_2, A, q_mul_c, T);               
+      Copy(GCD_MAX_SIZE_2, A, C);
+      Copy(GCD_MAX_SIZE_2, C, T); 
+      multosBlockMultiply(GCD_MAX_SIZE_2, tmp_1, D, q_mul_d);
+      multosBlockSubtract(GCD_MAX_SIZE_2, B, q_mul_d, T);               
+      Copy(GCD_MAX_SIZE_2, B, D);
+      Copy(GCD_MAX_SIZE_2, D, T);
+      multosBlockMultiply(GCD_MAX_SIZE_2, tmp_1, y, q_mul_y);
+      multosBlockSubtract(GCD_MAX_SIZE_2, x, q_mul_y, T);               
+      Copy(GCD_MAX_SIZE_2, x, y);
+      Copy(GCD_MAX_SIZE_2, y, T); 
+    }
+
+    result = compareBlock(GCD_MAX_SIZE_2, B, zeroes);
+    if (result != 0x02) {	// if B != 0
+
+      multosBlockMultiplyExtended(GCD_MAX_SIZE_2, A, a, t);
+      multosBlockMultiplyExtended(GCD_MAX_SIZE_2, B, b, Bb);
+      multosBlockAdd(GCD_MAX_SIZE_2*2, t, Bb, t);
+
+      t[3] &= 0x00; // ignore MSB
+      t[2] &= 0x00;
+      t[1] &= 0x00;
+      t[0] &= 0x00;
+
+      Copy(4, tmp_1, t+4);
+
+      multosBlockMultiplyExtended(GCD_MAX_SIZE_2, C, a, t);
+      multosBlockMultiplyExtended(GCD_MAX_SIZE_2, D, b, Bb);
+      multosBlockAdd(GCD_MAX_SIZE_2*2, t, Bb, t);
+
+      t[3] &= 0x00; // ignore MSB
+      t[2] &= 0x00;
+      t[1] &= 0x00;
+      t[0] &= 0x00;
+
+      Copy(4, tmp_2, t+4);
+
+      Copy(GCD_MAX_SIZE_2, a, tmp_1);
+      Copy(GCD_MAX_SIZE_2, b, tmp_2);
+
+      Copy(GCD_MAX_SIZE_2, public.apdu.data, a);
+
+    } else {
+      multosBlockDivide(GCD_MAX_SIZE_2, a, b, t, s);
+      Copy(GCD_MAX_SIZE_2, a, b);
+      Copy(GCD_MAX_SIZE_2, b, s);
+    }
+   }
+    /* Last step */
+  gcd_euclid_mini(a, b, r);
+  Copy(GCD_MAX_SIZE_2, public.apdu.data, r); 
+}
+
+/* Euclidean algorithm (Lehmer) for parameters of GCD_MAX_SIZE = 9 bytes */
+
+void gcd_lehmer_full(unsigned char *n1, unsigned char *n2, unsigned char *out)
+{
+  unsigned char a[GCD_MAX_SIZE]; 
+  unsigned char b[GCD_MAX_SIZE]; 
+
+  unsigned char x[GCD_MAX_SIZE]; 
+  unsigned char y[GCD_MAX_SIZE]; 
+
+  unsigned char tmp_1[GCD_MAX_SIZE];
+  unsigned char tmp_2[GCD_MAX_SIZE];
+
+  unsigned char r[GCD_MAX_SIZE];
+  
+  unsigned char tmp_3[GCD_MAX_SIZE];
+  unsigned char tmp_4[GCD_MAX_SIZE];
+
+  unsigned char Aa[GCD_MAX_SIZE];
+  unsigned char Bb[GCD_MAX_SIZE];
+  unsigned char Ca[GCD_MAX_SIZE];
+  unsigned char Db[GCD_MAX_SIZE];
+  unsigned char t[GCD_MAX_SIZE];
+  unsigned char s[GCD_MAX_SIZE];
+
+  unsigned char zeroes[GCD_MAX_SIZE];
+
+  unsigned char A[GCD_MAX_SIZE]; 
+  unsigned char B[GCD_MAX_SIZE]; 
+  unsigned char C[GCD_MAX_SIZE]; 
+  unsigned char D[GCD_MAX_SIZE]; 
+  unsigned char T[GCD_MAX_SIZE]; 
+
+  unsigned char base[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00};
+  unsigned char result = 0x00;
+
+  unsigned char r2 = 0x00;
+
+  unsigned short inc = 0x00;
+  const int i = 0;
+
+  const unsigned char A_DEFAULT[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+  const unsigned char B_DEFAULT[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};	
+  const unsigned char C_DEFAULT[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  const unsigned char D_DEFAULT[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+
+  unsigned char y_plus_d[GCD_MAX_SIZE]; 
+  unsigned char y_plus_c[GCD_MAX_SIZE]; 
+  unsigned char x_plus_a[GCD_MAX_SIZE]; 
+  unsigned char x_plus_b[GCD_MAX_SIZE]; 
+
+  unsigned char q_mul_c[GCD_MAX_SIZE]; 
+  unsigned char q_mul_d[GCD_MAX_SIZE]; 
+  unsigned char q_mul_y[GCD_MAX_SIZE]; 
+
+  Clear(GCD_MAX_SIZE, x);
+  Clear(GCD_MAX_SIZE, y);
+
+  Clear(GCD_MAX_SIZE, tmp_1);
+  Clear(GCD_MAX_SIZE, tmp_2);
+  Clear(GCD_MAX_SIZE_2, tmp_3);
+  Clear(GCD_MAX_SIZE_2, tmp_4);
+
+  Clear(GCD_MAX_SIZE_2, zeroes);
+
+  Copy(GCD_MAX_SIZE, a, n1);
+  Copy(GCD_MAX_SIZE, b, n2);
+
+  /* XXXX: Optimize later in assembler and remove
+     extra calls to functions */
+
+  result = compareBlock(GCD_MAX_SIZE, a, b);
+  
+  if (result == 0x03) { // a < b
+    Copy(GCD_MAX_SIZE, tmp_1, a);
+    Copy(GCD_MAX_SIZE, a, b);
+    Copy(GCD_MAX_SIZE, b, tmp_1);  
+  }
+
+  while(1) { // while (b >= BASE)
+
+    result = compareBlock(GCD_MAX_SIZE, b, base);  
+
+    if (result == 0x03) 
+      break;
+
+    generateXY_long(a, x);
+    generateXY_long(b, y);
+
+    Copy(GCD_MAX_SIZE, A, A_DEFAULT);
+    Copy(GCD_MAX_SIZE, B, B_DEFAULT);
+    Copy(GCD_MAX_SIZE, C, C_DEFAULT);
+    Copy(GCD_MAX_SIZE, D, D_DEFAULT);
+
+    while(1) { // second loop
+    
+      multosBlockIncrement(1, &r2);
+    
+      multosBlockAdd(GCD_MAX_SIZE, y, D, y_plus_d);
+      multosBlockAdd(GCD_MAX_SIZE, y, C, y_plus_c);
+      multosBlockAdd(GCD_MAX_SIZE, x, A, x_plus_a);
+      multosBlockAdd(GCD_MAX_SIZE, x, B, x_plus_b);
+
+      result = compareBlock(GCD_MAX_SIZE, zeroes, y_plus_d);
+      if (result == 0x02) 
+        break;
+      
+      result = compareBlock(GCD_MAX_SIZE, zeroes, y_plus_c);
+      if (result == 0x02) 
+        break;
+      
+      multosBlockDivide(GCD_MAX_SIZE, x_plus_a, y_plus_c, tmp_1, tmp_2); //tmp_1 = q, tmp_2 = r
+      multosBlockDivide(GCD_MAX_SIZE, x_plus_b, y_plus_d, tmp_3, tmp_4); //tmp_3 = q, tmp_4 = r
+
+      result = compareBlock(GCD_MAX_SIZE, tmp_1, tmp_3);
+      if (result != 0x02)  // tmp_1 != tmp_3
+        break;
+
+      multosBlockMultiply(GCD_MAX_SIZE, tmp_1, C, q_mul_c);
+      multosBlockSubtract(GCD_MAX_SIZE, A, q_mul_c, T);               
+      Copy(GCD_MAX_SIZE, A, C);
+      Copy(GCD_MAX_SIZE, C, T); 
+      multosBlockMultiply(GCD_MAX_SIZE, tmp_1, D, q_mul_d);
+      multosBlockSubtract(GCD_MAX_SIZE, B, q_mul_d, T);               
+      Copy(GCD_MAX_SIZE, B, D);
+      Copy(GCD_MAX_SIZE, D, T);
+      multosBlockMultiply(GCD_MAX_SIZE, tmp_1, y, q_mul_y);
+      multosBlockSubtract(GCD_MAX_SIZE, x, q_mul_y, T);               
+      Copy(GCD_MAX_SIZE, x, y);
+      Copy(GCD_MAX_SIZE, y, T); 
+    }
+
+    result = compareBlock(GCD_MAX_SIZE, B, zeroes);
+    if (result != 0x02) {	// if B != 0
+
+      multosBlockMultiplyExtended(GCD_MAX_SIZE, A, a, t);
+      multosBlockMultiplyExtended(GCD_MAX_SIZE, B, b, Bb);
+      multosBlockAdd(GCD_MAX_SIZE, t, Bb, t);
+
+      t[3] &= 0x00; // ignore MSB
+      t[2] &= 0x00;
+      t[1] &= 0x00;
+      t[0] &= 0x00;
+
+      Copy(4, tmp_1, t+4);
+
+      multosBlockMultiplyExtended(GCD_MAX_SIZE, C, a, t);
+      multosBlockMultiplyExtended(GCD_MAX_SIZE, D, b, Bb);
+      multosBlockAdd(GCD_MAX_SIZE, t, Bb, t);
+
+      t[3] &= 0x00; // ignore MSB
+      t[2] &= 0x00;
+      t[1] &= 0x00;
+      t[0] &= 0x00;
+
+      Copy(4, tmp_2, t+4);
+
+      Copy(GCD_MAX_SIZE, a, tmp_1);
+      Copy(GCD_MAX_SIZE, b, tmp_2);
+
+    } else {
+      multosBlockDivide(GCD_MAX_SIZE, a, b, t, s);
+      Copy(GCD_MAX_SIZE, a, b);
+      Copy(GCD_MAX_SIZE, b, s);
+    }
+   }
+
+    /* Last step */
+  gcd_euclid(a, b, r);
+  Copy(GCD_MAX_SIZE, out, r); 
+}
+
+/* Extended Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes */
+
+void gcd_ext_euclid(unsigned char *a, unsigned char *b)
+{
+  unsigned char q[GCD_MAX_SIZE]; /* quotient of Euclidean division */
+  unsigned char r[GCD_MAX_SIZE]; /* remainder of Euclidean division */
+
+  unsigned char x[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+  unsigned char y[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+
+  unsigned char u[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+  unsigned char v[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+
+  unsigned char m[GCD_MAX_SIZE]; /*  */
+  unsigned char n[GCD_MAX_SIZE]; /*  */
+
+  unsigned char u_mul_q[GCD_MAX_SIZE]; /*  */
+  unsigned char v_mul_q[GCD_MAX_SIZE]; /*  */
+
+  unsigned char z[GCD_MAX_SIZE]; /* buffer of zeroes for comparing */
+
+  unsigned char finish = 0x00;
+
+  Clear(GCD_MAX_SIZE, z);
+
+  while (1) {
+    finish = compareBlock(GCD_MAX_SIZE, a, z);
+
+    if (finish == 0x02)
+      break;
+
+    multosBlockDivide(GCD_MAX_SIZE, b, a, q, r);
+    
+    //  m == x-u*q
+    //  n == y-v*q
+   
+    multosBlockMultiply(GCD_MAX_SIZE, u, q, u_mul_q);
+    multosBlockSubtract(GCD_MAX_SIZE, x, u_mul_q, m);               
+
+    multosBlockMultiply(GCD_MAX_SIZE, v, q, v_mul_q);               
+    multosBlockSubtract(GCD_MAX_SIZE, y, v_mul_q, n);               
+
+    Copy(GCD_MAX_SIZE, b, a);
+    Copy(GCD_MAX_SIZE, a, r);
+
+    Copy(GCD_MAX_SIZE, x, u);
+    Copy(GCD_MAX_SIZE, y, v);
+
+    Copy(GCD_MAX_SIZE, u, m);
+    Copy(GCD_MAX_SIZE, v, n);
+  }
+
+  /*
+    b = gcd
+    (x, y) is the solution of the diophantine equation
+  */
+
+    Copy(GCD_MAX_SIZE, public.apdu.data, x);
+    Copy(GCD_MAX_SIZE, public.apdu.data+GCD_MAX_SIZE, y);
+} 
+
+/* Extended Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes 
+   Case #4
+*/
+
+void gcd_ext_euclid_case_4(unsigned char *a, unsigned char *b)
+{
+  unsigned char q[GCD_MAX_SIZE]; /* quotient of Euclidean division */
+  unsigned char r[GCD_MAX_SIZE]; /* remainder of Euclidean division */
+
+  unsigned char x[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+  unsigned char y[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+
+  unsigned char u[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /*  */
+  unsigned char v[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /*  */
+
+  unsigned char m[GCD_MAX_SIZE]; /*  */
+  unsigned char n[GCD_MAX_SIZE]; /*  */
+
+  unsigned char u_mul_q[GCD_MAX_SIZE*2]; /*  */
+  unsigned char v_mul_q[GCD_MAX_SIZE*2]; /*  */
+
+  unsigned char z[GCD_MAX_SIZE]; /* buffer of zeroes for comparing */
+
+  unsigned char finish = 0x00;
+
+  Clear(GCD_MAX_SIZE, z);
+
+  while (1) {
+    finish = compareBlock(GCD_MAX_SIZE, a, z);
+
+    if (finish == 0x02)
+      break;
+
+    multosBlockDivide(GCD_MAX_SIZE, b, a, q, r);
+    
+    //  m == x-u*q
+    //  n == y-v*q
+   
+    multosBlockMultiplyExtended(GCD_MAX_SIZE, u, q, u_mul_q);
+    multosBlockSubtract(GCD_MAX_SIZE, x, u_mul_q, m);               
+
+    multosBlockMultiplyExtended(GCD_MAX_SIZE, v, q, v_mul_q);               
+    multosBlockSubtract(GCD_MAX_SIZE, y, v_mul_q, n);               
+
+    Copy(GCD_MAX_SIZE, b, a);
+    Copy(GCD_MAX_SIZE, a, r);
+
+    Copy(GCD_MAX_SIZE, x, u);
+    Copy(GCD_MAX_SIZE, y, v);
+
+    Copy(GCD_MAX_SIZE, u, m);
+    Copy(GCD_MAX_SIZE, v, n);
+  }
+
+  /*
+    b = gcd
+    (x, y) is the solution of the diophantine equation
+  */
+
+    Copy(GCD_MAX_SIZE, public.apdu.data, y);
+} 
+
