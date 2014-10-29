@@ -800,7 +800,7 @@ void gcd_lehmer_full(unsigned char *n1, unsigned char *n2, unsigned char *out)
 
 /* Extended Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes */
 
-void gcd_ext_euclid(unsigned char *a, unsigned char *b)
+void gcd_ext_euclid(unsigned char *a, unsigned char *b, unsigned char *out)
 {
   unsigned char q[GCD_MAX_SIZE]; /* quotient of Euclidean division */
   unsigned char r[GCD_MAX_SIZE]; /* remainder of Euclidean division */
@@ -856,6 +856,7 @@ void gcd_ext_euclid(unsigned char *a, unsigned char *b)
   */
 
     Copy(GCD_MAX_SIZE, public.apdu.data, x);
+    Copy(GCD_MAX_SIZE, public.apdu.data+GCD_MAX_SIZE, y);
 } 
 
 /* Extended Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes 

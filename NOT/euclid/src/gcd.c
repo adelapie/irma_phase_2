@@ -855,7 +855,8 @@ void gcd_ext_euclid(unsigned char *a, unsigned char *b)
     (x, y) is the solution of the diophantine equation
   */
 
-    Copy(GCD_MAX_SIZE, public.apdu.data, y);
+    Copy(GCD_MAX_SIZE, public.apdu.data, x);
+    Copy(GCD_MAX_SIZE, public.apdu.data+GCD_MAX_SIZE, y);
 } 
 
 /* Extended Euclidean algorithm for parameters of GCD_MAX_SIZE = 9 bytes 

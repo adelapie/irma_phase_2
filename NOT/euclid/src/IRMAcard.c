@@ -170,8 +170,13 @@ unsigned char a_test = 0x03;
 unsigned char a_short; 			/* The product of -1*a will be stored here */
 unsigned char minus_one = 0xff; 	/* two's complement -1 */
 
-unsigned char a = 0xfd; 		/* The first part of the pair (a, b) from the diphantine equation */
-unsigned char b = 0x0d;			/* The second part of the pair (a, b) from the diphantine equation */
+/*      We prove that '7' is not in our credential (m_t, R1). In our case, mt = 30, containing
+      (2, 3, 5), represented as 0x1e.
+
+*/
+
+unsigned char a; 		/* The first part of the pair (a, b) from the diphantine equation */
+unsigned char b;		/* The second part of the pair (a, b) from the diphantine equation */
 
 // Z ** 7
 
@@ -928,6 +933,14 @@ void processVerification(void) {
         
         if (P2 == 0x25) {
 
+          unsigned char a_1[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07};
+          unsigned char b_1[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e};
+
+          gcd_ext_euclid(a_1, b_1);
+
+          b = public.apdu.data[GCD_MAX_SIZE - 1];
+          a = public.apdu.data[GCD_MAX_SIZE*2 - 1];
+
           hat_a_op_1();
 
           Fill(SIZE_M_, session.prove.op2, 0x00); // a*c is aligned to mHatTemp's size
@@ -944,6 +957,11 @@ void processVerification(void) {
         /* \hat{b} */
         
         if (P2 == 0x26) {
+        
+          ComputeHat();
+          crypto_compute_b(P1);
+
+          APDU_returnLa(SIZE_M_);
 
 /* Case 1
           unsigned char a[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
@@ -964,14 +982,6 @@ void processVerification(void) {
           unsigned char a[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x01, 0xf1, 0xd3, 0x6b, 0xfb};
           unsigned char b[GCD_MAX_SIZE] = {0x06, 0x02, 0x64, 0x75, 0xbf, 0x3b, 0x86, 0x00, 0x00};
 */
-
-/* Case NOT */
-
-          unsigned char a[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfd};
-          unsigned char b[GCD_MAX_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d};
-
-          gcd_ext_euclid(a, b);
-          APDU_returnLa(GCD_MAX_SIZE);
         } 
 
         /* C */
