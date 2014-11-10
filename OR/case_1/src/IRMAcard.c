@@ -893,15 +893,16 @@ void processVerification(void) {
           APDU_returnSW(SW_WRONG_P1P2);
         }
 
-        /* \tilde{C} */
+        /* \tilde{r1} (3) */
         
         if (P2 == 0x23) {
+          ComputeHat();
           Copy(SIZE_N, public.apdu.data, session.prove.Ctilde);
 
           APDU_returnLa(SIZE_N);
         } 
 
-        /* \hat{r} */
+        /* \hat{r0} (4) */
         
         if (P2 == 0x06) {
           ComputeHat();
@@ -911,7 +912,7 @@ void processVerification(void) {
           APDU_returnLa(SIZE_M_);
         } 
 
-        /* \hat{h} */
+        /* \hat{alpha} (2) */
         
         if (P2 == 0x24) {
           ComputeHat();
@@ -921,7 +922,7 @@ void processVerification(void) {
           APDU_returnLa(SIZE_M_);
         } 
 
-        /* C */
+        /* D (1) */
         
         if (P2 == 0x07) {
           Copy(SIZE_N, public.apdu.data, session.prove.D);

@@ -129,7 +129,7 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
 
   //multosSecureHashIV(SIZE_STATZK, SHA_256, session.prove.challenge, public.prove.apdu.nonce, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
-  /* D = Z^m * S^r \mod n */
+  /* D = Z^m * S^r \mod n (1) */
 
   ModExp(SIZE_M, SIZE_N, credential->attribute[0], credential->issuerKey.n, credential->issuerKey.Z, public.prove.buffer.number[0]);          
   ModExp(SIZE_M, SIZE_N, r, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
@@ -138,13 +138,13 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   Copy(SIZE_N, session.prove.D, public.prove.buffer.number[0]);
     
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.D, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
-
-  /* C_tilde = (Z^(m_r))^ \tilde{m_h} * S ^ \tilde{r}/ */
-
-  ComputeHat();  
+  
+  /* T2 = D^tilde{alpha} * S^tilde{r1} */
+  
+  ComputeHat(); //tilde{alpha}  
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, rev_attr_1, public.prove.buffer.number[0]);          
 
-  ComputeHat();  
+  ComputeHat(); //tilde{r1}  
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  
   
@@ -153,6 +153,7 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
 //  multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.Ctilde, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
   /* \tilde{T_1} = Z^{\tilde{m}} * S^{\tilde{r}} \mod n */
+  ComputeHat();
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
 
   ComputeHat();  
