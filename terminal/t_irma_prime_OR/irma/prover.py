@@ -232,7 +232,16 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
   v = irma_util.APDU2integer(data)
 
   if DEBUG:
-    print "hat{h}"
+    print "D"
+
+  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_C)
+  irma_util.print_details(DEBUG, CMD_GET_C, r, t, n)
+
+  data, sw1, sw2 = r
+  D = irma_util.APDU2integer(data)
+
+  if DEBUG:
+    print "hat{alpha}"
 
   (t, r, n) = irma_util.send_apdu(connection, CMD_GET_H_HAT)
   irma_util.print_details(DEBUG, CMD_GET_H_HAT, r, t, n)
@@ -241,7 +250,16 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
   h_hat = irma_util.APDU2integer(data)
 
   if DEBUG:
-    print "hat{r}"
+    print "hat{r1}"
+
+  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_C_TILDE)
+  irma_util.print_details(DEBUG, CMD_GET_C_TILDE, r, t, n)
+
+  data, sw1, sw2 = r
+  r_1_hat = irma_util.APDU2integer(data)
+
+  if DEBUG:
+    print "hat{r0}"
 
   (t, r, n) = irma_util.send_apdu(connection, CMD_GET_R_HAT)
   irma_util.print_details(DEBUG, CMD_GET_R_HAT, r, t, n)
@@ -267,14 +285,6 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
   data, sw1, sw2 = r
   ms = irma_util.APDU2integer(data)
   
-  if DEBUG:
-    print "D"
-
-  (t, r, n) = irma_util.send_apdu(connection, CMD_GET_C)
-  irma_util.print_details(DEBUG, CMD_GET_C, r, t, n)
-
-  data, sw1, sw2 = r
-  D = irma_util.APDU2integer(data)
 
   a = a % pk_i['N']
   D = D % pk_i['N']
