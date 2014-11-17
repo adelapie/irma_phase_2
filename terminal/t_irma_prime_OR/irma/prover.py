@@ -98,6 +98,9 @@ CRED_SEL_1 = [0x00, 0x01]
 CRED_SEL_HIDE = [0x00, 0x02]
 TIME_STAMP = [0x52, 0xCD, 0x9E, 0xE5]
 
+def tohex(val, nbits):
+  return hex((val + (1 << nbits)) % (1 << nbits))
+
 def proveCommitment(connection, pk_i, CRED_ID, DEBUG): 
   
   NONCE = irma_util.gen_nonce(LEN_NONCE_BITS, 1)
@@ -291,17 +294,20 @@ def proveCommitmentHideAll(connection, pk_i, CRED_ID, DEBUG):
 
   ms = ms % pk_i['N'] 
   m1 = m1 % pk_i['N'] 
-  
+
+  m_r_sim = integer(int("0000000000000000000000000000000000000000000000000000000000000006", 16))
+    
   # \tilde{T_1}
 
-  T_1 = (D ** (-1 * c) ) * (pk_i['Z'] ** m1) * (pk_i['S'] ** r_hat)
+  T_1 = (D ** (-1 * c)) * (pk_i['Z'] ** m1) * (pk_i['S'] ** r_hat)
 
-  # \tilde{D}
+  # \tilde{T_2}
   
-  D_tilde = ((D ** (-1 * c)) * ((pk_i['Z'] ** 2) ** h_hat) * (pk_i['S'] ** r_hat)) % pk_i['N']
+  T_2 = ((pk_i['Z'] ** m_r_sim) ** (-1 *c)) * (D ** h_hat) * (pk_i['S'] ** r_1_hat) % pk_i['N']
     
-  input = { 'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'C':D, 'Co':T_1, 'C_t':D_tilde }
+  input = { 'pChat':c, 'n3':irma_util.APDU2integer(NONCE), 'pAprime':a, 'pEhat':e, 'pVprimeHat':v, 'mHatMs':ms, 'C':D, 'Co':T_1, 'C_t':T_2 }
   m = { '1':m1 }
+  
   
   verifier = protocol_ibm12.Verifier(pk_i, irma_util.APDU2integer(CONTEXT))
   return (data, sw1, sw2, verifier.verifyHideAllIRMA_PRIME(m, input))

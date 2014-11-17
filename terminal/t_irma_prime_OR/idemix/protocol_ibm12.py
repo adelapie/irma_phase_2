@@ -718,7 +718,7 @@ class Verifier:
       #s6.update(Conversion.IP2OS(n3))
       
       s6.update(Conversion.IP2OS(C))
-      #s6.update(Conversion.IP2OS(C_tilde))
+      s6.update(Conversion.IP2OS(C_tilde))
       s6.update(Conversion.IP2OS(Co))
       s6.update(Conversion.IP2OS(self.context))
       s6.update(Conversion.IP2OS(pAprime))
