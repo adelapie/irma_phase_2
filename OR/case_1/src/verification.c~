@@ -147,7 +147,10 @@ void constructProof(Credential *credential, unsigned char *masterSecret) {
   ComputeHat(); //tilde{r1}  
   ModExp(SIZE_M_, SIZE_N, session.prove.mHatTemp, credential->issuerKey.n, credential->issuerKey.S, public.prove.buffer.number[1]);          
   ModMul(SIZE_N, public.prove.buffer.number[0], public.prove.buffer.number[1], credential->issuerKey.n);  
-    
+  
+  //Copy(SIZE_N, session.prove.Ctilde, public.prove.buffer.number[0]);
+  
+  //multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, session.prove.Ctilde, session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
   multosSecureHashIV(SIZE_N, SHA_256, session.prove.challenge, public.prove.buffer.number[0], session.prove.bufferHash, &dwPrevHashedBytes, &wLenMsgRem, &pRemainder);
 
   /* \tilde{T_1} = Z^{\tilde{m}} * S^{\tilde{r}} \mod n */

@@ -193,7 +193,7 @@ typedef struct {
   Hash challenge; // 32
   unsigned char bufferHash[32];
   Number D;
-  unsigned char var1[SIZE_M], var2[SIZE_M], var3[SIZE_M*2];
+  unsigned char var1[SIZE_M], var2[SIZE_M], var3[SIZE_M*2], var4[SIZE_M];
 } VerificationSession; // 16*2 + 74 + 2 + 32 = 140
 
 typedef struct {

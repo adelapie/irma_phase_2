@@ -221,12 +221,12 @@ do { \
   __code(STOREI, SIZE_M_); \
 } while (0)
 
-#define crypto_compute_h(i) \
+#define crypto_compute_alpha(i) \
 do { \
   /* Multiply c with m */\
   __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
   __push(BLOCKCAST(SIZE_H)(session.prove.challenge)); \
-  __push(BLOCKCAST(SIZE_M)(h)); \
+  __push(BLOCKCAST(SIZE_M)(alpha_long)); \
   __code(PRIM, PRIM_MULTIPLY, SIZE_M); \
   /* Put the result address in front of the operand (for STOREI) */\
   __push(session.prove.mHatTemp); \
@@ -240,6 +240,23 @@ do { \
   __code(STOREI, SIZE_M_); \
 } while (0)
 
-
+#define crypto_compute_r_prima(i) \
+do { \
+  /* Multiply c with m */\
+  __code(PUSHZ, SIZE_M_ + 2 - 2*SIZE_M); \
+  __push(BLOCKCAST(SIZE_H)(session.prove.challenge)); \
+  __push(BLOCKCAST(SIZE_M)(session.prove.test)); \
+  __code(PRIM, PRIM_MULTIPLY, SIZE_M); \
+  /* Put the result address in front of the operand (for STOREI) */\
+  __push(session.prove.mHatTemp); \
+  __code(PUSHZ, SIZE_M_); \
+  __code(ORN, SIZE_M_ + 2); \
+  __code(POPN, SIZE_M_ + 2); \
+  /* Add mTilde to the result of the multiplication and store in mHatTemp*/\
+  __push(BLOCKCAST(SIZE_M_)(session.prove.mHatTemp)); \
+  __code(ADDN, SIZE_M_); \
+  __code(POPN, SIZE_M_); \
+  __code(STOREI, SIZE_M_); \
+} while (0)
 
 #endif // __verification_H

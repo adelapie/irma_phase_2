@@ -75,4 +75,54 @@ void ClearCredential(Credential *credential);
  */
 //void ClearSession(void);
 
+#define multosBlockMultiply(blockLength, block1, block2, result) \
+do \
+{ \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block1))); \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MULTIPLY, blockLength); \
+  __code (STORE, __typechk(unsigned char *, result), blockLength); \
+} while (0)
+
+#define multosBlockMultiplyExtended(blockLength, block1, block2, result) \
+do \
+{ \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block1))); \
+  __push (BLOCKCAST(blockLength)(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MULTIPLY, blockLength); \
+  __code (STORE, __typechk(unsigned char *, result), blockLength*2); \
+} while (0)
+
+#define r_prima_op_1(block1, block2, result) \
+do \
+{ \
+  __push (BLOCKCAST(1)(__typechk(unsigned char *, block1))); \
+  __push (BLOCKCAST(SIZE_M)(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MULTIPLY, SIZE_M); \
+  __code (STORE, __typechk(unsigned char *, result), SIZE_M); \
+} while (0)
+
+#define r_minus(block1, block2, result) \
+do \
+{ \
+  __push (BLOCKCAST(1)(__typechk(unsigned char *, block1))); \
+  __push (BLOCKCAST(1)(__typechk(unsigned char *, block2))); \
+  __code (PRIM, PRIM_MULTIPLY, 1); \
+  __code (STORE, __typechk(unsigned char *, result), 1 + 1); \
+} while (0)
+
+#define __BINARY_OPN(N, OP, RES, OP1, OP2) \
+do \
+{  \
+  __push (BLOCKCAST(N)(__typechk(unsigned char *, OP1))); \
+  __push (BLOCKCAST(N)(__typechk(unsigned char *, OP2))); \
+  __code (OP, N);  \
+  __code (POPN, N);  \
+  __code (STORE, __typechk(unsigned char *, RES), N); \
+} while (0)
+
+
+#define multosBlockAdd(blockLength, block1, block2, result) \
+    __BINARY_OPN (blockLength, ADDN, result, block1, block2)                      
+
 #endif // __utils_H
