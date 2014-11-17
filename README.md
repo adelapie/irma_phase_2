@@ -54,6 +54,8 @@ https://github.com/adelapie/irma_phase_2/tree/master/selective_disclosure
 	* AND https://github.com/adelapie/irma_phase_2/tree/master/AND (ph: hide all, pr: reveal n attributes)
 	* NOT https://github.com/adelapie/irma_phase_2/tree/master/NOT (pre: precomputation of the values of the
 diophantine equation, euclid: solving the diophantine equation at run time)
+	* OR https://github.com/adelapie/irma_phase_2/tree/master/OR (case_1: one attribute
+belongs to a list of constants)
 
 #### Protocol extensions
 
@@ -68,6 +70,7 @@ https://github.com/adelapie/irma_phase_2/tree/master/eq_proof
 
 ### References
 
+- Antonio de la Piedra, Jaap-Henk Hoepman, and Pim Vullers, Towards a Full-Featured Implementation of Attribute Based Credentials on Smart Card. In A. Kiayias and D. Gritzali, editors, 13th Int. Conf. on Cryptology and Network Security - CANS 2014, Heraklion, Crete, Greece, October 22-24 2014.
 - Idemix specification: http://www.zurich.ibm.com/security/idemix/
 - The IRMA card: https://github.com/credentials/irma_card
 
